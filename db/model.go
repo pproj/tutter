@@ -14,13 +14,17 @@ type Post struct {
 }
 
 type Tag struct {
-	ID        uint      `json:"id" gorm:"primarykey"`
+	ID        uint      `json:"-" gorm:"primarykey"`
 	FirstSeen time.Time `json:"first_seen" gorm:"default:now()"`
 	Tag       string    `json:"tag" gorm:"uniqueIndex, varchar(280)"`
+
+	Posts []*Post `json:"posts,omitempty" gorm:"many2many:post_tags;"`
 }
 
 type Author struct {
 	ID        uint      `json:"id" gorm:"primarykey"`
 	FirstSeen time.Time `json:"first_seen" gorm:"default:now()"`
 	Name      string    `json:"name" gorm:"uniqueIndex;varchar(32)"`
+
+	Posts []*Post `json:"posts,omitempty" gorm:""`
 }

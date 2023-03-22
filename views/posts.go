@@ -4,8 +4,15 @@ import (
 	"git.sch.bme.hu/pp23/tutter/db"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"regexp"
 	"strconv"
 )
+
+var tagRegex *regexp.Regexp
+
+func init() {
+	tagRegex = regexp.MustCompile(`#[a-zA-Z0-9]+`)
+}
 
 func createPost(ctx *gin.Context) {
 	type newPostParamsType struct {
@@ -19,14 +26,25 @@ func createPost(ctx *gin.Context) {
 		return
 	}
 
-	// TODO: Parse tags
+	match := tagRegex.FindAllStringSubmatch(newPostParams.Text, 260/2)
+
+	var tags []*db.Tag
+	for _, tagMatch := range match {
+		if len(tagMatch) == 0 {
+			break
+		}
+		tagText := tagMatch[0][1:]
+		tags = append(tags, &db.Tag{
+			Tag: tagText,
+		})
+	}
 
 	newPost := db.Post{
 		Text: newPostParams.Text,
 		Author: &db.Author{
 			Name: newPostParams.Author,
 		},
-		Tags: []*db.Tag{},
+		Tags: tags,
 	}
 
 	err = db.CreatePost(&newPost)
