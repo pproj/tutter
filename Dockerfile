@@ -1,4 +1,4 @@
-FROM golang:1.19-alpine3.17 as backend-builder
+FROM golang:1.20-alpine3.17 as backend-builder
 
 COPY . /src/
 WORKDIR /src
@@ -19,6 +19,7 @@ RUN apk add --no-cache ca-certificates
 
 COPY --from=frontend-builder /src/dist /app/dist
 COPY --from=backend-builder /src/main /app/main
+COPY ./apidoc /app/apidoc
 WORKDIR /app
 
 ENV GIN_MODE=release

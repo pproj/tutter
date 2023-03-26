@@ -54,6 +54,10 @@ func main() {
 	api := router.Group("/api")
 	views.RegisterEndpoints(api)
 
+	// Add API documentation... it may be ugly, but it works well.
+	api.StaticFile("/", "apidoc/apidoc.html")
+	api.StaticFile("/spec.yaml", "apidoc/spec.yaml")
+
 	// Listen and serve on 0.0.0.0:8080
 	err = router.Run(":8080")
 	if err != nil {
