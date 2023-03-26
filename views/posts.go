@@ -11,8 +11,10 @@ import (
 	"strings"
 )
 
-var tagRegex *regexp.Regexp
-var blueMondayPolicy *bluemonday.Policy
+var (
+	tagRegex         *regexp.Regexp
+	blueMondayPolicy *bluemonday.Policy
+)
 
 func init() {
 	tagRegex = regexp.MustCompile(`#[a-zA-Z0-9]+`)
