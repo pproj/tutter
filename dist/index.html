@@ -3,35 +3,73 @@
 
 
     <script>
-        function loadPosts() {
-            fetch("/api/post").then(response => response.json()).then(response => {
 
-                const posts = document.getElementById("posts")
-                posts.innerHTML = ""
-                response.forEach((field) => {
-                    var p = document.createElement("p");
-                    p.innerHTML = "<b>" + field.author.name + "</b>: " + field.text
-                    posts.append(p)
+        function loadSomethingSomewhere(endpoint, tag, formatter) {
+            const startTime = new Date();
+            fetch(endpoint).then(response => {
+                endTime = new Date();
+                response.json().then(jsonResp => {
+                    const latency = endTime - startTime; //in ms
+
+                    const targetHolder = document.getElementById(tag)
+                    targetHolder.innerHTML = ""
+
+                    stats = document.createElement("div")
+                    stats.innerHTML = "<b>Status:</b> " + response.status + " " + response.statusText + "<br><b>Latency:</b> " + latency + "ms<br><b>Items:</b> " + jsonResp.length
+                    targetHolder.append(stats)
+
+                    ul = document.createElement("ul")
+
+                    jsonResp.forEach((field) => {
+                        const li = document.createElement("li");
+                        li.innerHTML = formatter(field)
+                        ul.append(li)
+                    })
+
+                    targetHolder.append(ul)
+
                 })
+
             })
 
         }
 
-        function onSubmit() {
-            var form = document.getElementById("form")
-            var formData = new FormData(form);
-            var object = {};
-            formData.forEach((value, key) => object[key] = value);
-            var json_data = JSON.stringify(object);
+        function loadPosts() {
+            loadSomethingSomewhere("/api/post", "posts", (field) => "<b>" + field.author.name + "</b>: " + field.text)
+        }
 
-           fetch('/api/post', {
+        function loadAuthors() {
+            loadSomethingSomewhere("/api/author", "authors", (field) => field.name)
+        }
+
+        function loadTags() {
+            loadSomethingSomewhere("/api/tag", "tags", (field) => field.tag)
+        }
+
+        function onSubmit() {
+            const form = document.getElementById("form")
+            const formData = new FormData(form);
+            let object = {};
+            formData.forEach((value, key) => object[key] = value);
+            const json_data = JSON.stringify(object);
+
+            fetch('/api/post', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
                 body: json_data
-            }).then(resp => console.log(resp))
+            }).then(response => {
+                response.json().then(respJson => {
+                    const respHolder = document.getElementById("resp")
+                    const resStatsHolder = document.getElementById("respStats")
+                    resStatsHolder.innerHTML = "<b>Status:</b> " + response.status + " " + response.statusText
+                    respHolder.innerHTML = JSON.stringify(respJson)
+                    form.reset()
+                    loadPosts()
+                })
+            })
 
 
         }
@@ -42,18 +80,48 @@
 </head>
 <body>
 
-New post
-<form onsubmit="onSubmit(); return false" id="form">
-    Name: <input type="text" name="author" id="input_name"><br>
-    Post: <textarea name="text" id="input_text"></textarea>
-    <input type="submit">
-</form>
+<img src="assets/logo.svg" style="float:left">
+<h1 style="float:left">Tutter debug console</h1>
+<a href="/api" style="float: right; padding: 2em">API Documentation</a>
+<br style="clear: both">
 
-Posts
-<button onclick="loadPosts()">Load</button>
-<div id="posts">
+<div style="border: green solid 1px; margin: 2em 1em; padding: 1em">
+    <h2>New post</h2>
+    <form onsubmit="onSubmit(); return false" id="form">
+        Name: <input type="text" name="author" id="input_name"><br>
+        Post: <textarea name="text" id="input_text"></textarea>
+        <input type="submit">
+    </form>
+
+    <div style="border: red solid 1px; margin: 1em 0; padding: 1em">
+        <h3>Response</h3>
+        <div>
+            <div id="respStats"></div>
+            <pre id="resp"></pre>
+        </div>
+    </div>
 </div>
 
+    <div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
+        <h2>Posts</h2>
+        <button onclick="loadPosts()">Load</button>
+        <div id="posts">
+        </div>
+    </div>
+
+    <div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
+        <h2>Authors</h2>
+        <button onclick="loadAuthors()">Load</button>
+        <div id="authors">
+        </div>
+    </div>
+
+    <div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
+        <h2>Tags</h2>
+        <button onclick="loadTags()">Load</button>
+        <div id="tags">
+        </div>
+    </div>
 
 </body>
 </html>

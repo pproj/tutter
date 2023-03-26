@@ -6,7 +6,6 @@ info:
     
     Tutter is a simple social platform. Developed for PP'23.
     
-    
     ## Posts
     
     For storage concerns, the maximum post length allowed on Tutter is only 260 UTF-8 characters long.
@@ -16,11 +15,13 @@ info:
     There is no authentication of any kind to use Tutter. You may post using any name you want. 
     Registration is also not reqired to use Tutter. New user accounts created upon the first time they post something.
     
+    Similarly to posts, the maximum length of a username are 32 characters.
+    
     ## Hashtags
     
     Hashtags are supported in posts. They are automatically parsed from the text of the posts.
     
-    A hashtag may only consist of lower case latters from the english alphabet and numbers. Hashtags are parsed up to the first non-allowed characted (usually a whitespace) or the end of the post.
+    A hashtag may only consist of lower case latters from the english alphabet and numbers. Hashtags are parsed up to the first non-allowed characted (usually a whitespace) or the end of the post. (For convinince upper case letters are allowed during parsing, but they will be treated lowercase) 
     
     There is also and endpoint to fetch posts which contain a specific hashtag.
 

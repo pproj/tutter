@@ -44,7 +44,7 @@ func CreatePost(post *Post) error {
 
 func GetAllPosts() (*[]Post, error) {
 	var allPosts []Post
-	result := db.Preload("Author").Find(&allPosts)
+	result := db.Preload("Author").Preload("Tags").Find(&allPosts)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -53,7 +53,7 @@ func GetAllPosts() (*[]Post, error) {
 
 func GetLastNPosts(n int) (*[]Post, error) {
 	var allPosts []Post
-	result := db.Preload("Author").Order("created_at DESC").Limit(n).Find(&allPosts)
+	result := db.Preload("Author").Preload("Tags").Order("created_at DESC").Limit(n).Find(&allPosts)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -62,7 +62,7 @@ func GetLastNPosts(n int) (*[]Post, error) {
 
 func GetAllPostsAfterId(id uint) (*[]Post, error) {
 	var allPosts []Post
-	result := db.Preload("Author").Where("id > ?", id).Find(&allPosts)
+	result := db.Preload("Author").Preload("Tags").Where("id > ?", id).Find(&allPosts)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -71,7 +71,7 @@ func GetAllPostsAfterId(id uint) (*[]Post, error) {
 
 func GetNPostsBeforeId(n int, id uint) (*[]Post, error) {
 	var allPosts []Post
-	result := db.Preload("Author").Where("id < ?", id).Order("created_at DESC").Limit(n).Find(&allPosts)
+	result := db.Preload("Author").Preload("Tags").Where("id < ?", id).Order("created_at DESC").Limit(n).Find(&allPosts)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -80,7 +80,7 @@ func GetNPostsBeforeId(n int, id uint) (*[]Post, error) {
 
 func GetAllPostsAfterTimestamp(ts time.Time) (*[]Post, error) {
 	var allPosts []Post
-	result := db.Preload("Author").Where("created_at > ?", ts).Find(&allPosts)
+	result := db.Preload("Author").Preload("Tags").Where("created_at > ?", ts).Find(&allPosts)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -89,7 +89,7 @@ func GetAllPostsAfterTimestamp(ts time.Time) (*[]Post, error) {
 
 func GetPostById(id uint) (*Post, error) {
 	var post Post
-	result := db.Preload("Author").First(&post, id)
+	result := db.Preload("Author").Preload("Tags").First(&post, id)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -129,7 +129,7 @@ func GetAllTags() (*[]Tag, error) {
 
 func GetTagByTag(tagStr string) (*Tag, error) {
 	var tag Tag
-	result := db.Preload("Posts").Where("tag = ?", tagStr).Preload("Posts.Author").First(&tag)
+	result := db.Preload("Posts").Where("tag = ?", tagStr).Preload("Posts.Author").Preload("Posts.Tags").First(&tag)
 	if result.Error != nil {
 		return nil, result.Error
 	}
