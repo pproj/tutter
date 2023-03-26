@@ -1,0 +1,313 @@
+openapi: 3.0.3
+info:
+  title: Tutter - OpenAPI 3.0
+  version: 0.1.0
+  description: |-
+    
+    Tutter is a simple social platform. Developed for PP'23.
+    
+    
+    ## Posts
+    
+    For storage concerns, the maximum post length allowed on Tutter is only 260 UTF-8 characters long.
+    
+    ## Users
+    
+    There is no authentication of any kind to use Tutter. You may post using any name you want. 
+    Registration is also not reqired to use Tutter. New user accounts created upon the first time they post something.
+    
+    ## Hashtags
+    
+    Hashtags are supported in posts. They are automatically parsed from the text of the posts.
+    
+    A hashtag may only consist of lower case latters from the english alphabet and numbers. Hashtags are parsed up to the first non-allowed characted (usually a whitespace) or the end of the post.
+    
+    There is also and endpoint to fetch posts which contain a specific hashtag.
+
+
+externalDocs:
+  description: More about PP Project
+  url: https://pproj.org/
+
+servers:
+  - url: /api
+
+tags:
+  - name: post
+    description: Create and read posts
+  - name: tag
+    description: Get hashtags and related posts
+  - name: author
+    description: Get authors and their posts
+
+paths:
+  /post:
+    post:
+      tags:
+        - post
+      summary: Create a new post
+      description: ""
+      requestBody:
+        description: ""
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPostBody'
+      responses:
+        '201':
+          description: "Successfully created post"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostWithAuthor'
+        '400':
+          description: "Invalid data supplied"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserErrorResponse'
+
+    get:
+      tags:
+        - post
+      summary: "List posts"
+      description: "Altrough this endpoint allow listing of all posts in a single response it is highly unadvised for preformance concenrns. Please always use some filters or limits!"
+      parameters: []
+      responses:
+        '200':
+          description: "List of matching posts (or empty array for no match)"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PostWithAuthor'
+
+  /post/{postId}:
+    get:
+      tags:
+        - post
+      summary: "Get a specific post"
+      parameters:
+        - name: postId
+          in: path
+          description: Numeric ID of the Post to get
+          required: true
+          schema:
+            type: integer
+            format: uint64
+            example: 10
+      responses:
+        '200':
+          description: "Post content"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostWithAuthor'
+        '404':
+          description: "Post not found"
+  /tag:
+    get:
+      tags:
+        - tag
+      summary: "List hashtags"
+      description: "List all known hashtags WITHOUT their related posts"
+      parameters: []
+      responses:
+        '200':
+          description: "List of known hashtags (or empty array if there is none)"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+
+  /tag/{hashtag}:
+    get:
+      tags:
+        - tag
+      summary: "Get a specific hashtag with related posts"
+      description: "Altrough this endpoint allow listing of all posts realted to a hashtag in a single response may raise preformance concenrns. It is recommended to use some filters or limits!"
+      parameters:
+        - name: hashtag
+          in: path
+          description: hashtag to get
+          required: true
+          schema:
+            type: string
+            example: example
+      responses:
+        '200':
+          description: "Hashtag info with matching related posts"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagWithPosts'
+        '404':
+          description: "Hashtag not found (probably never used before)"
+
+  /author:
+    get:
+      tags:
+        - author
+      summary: "List authors"
+      description: "Get a list of all authors WITHOUT their posts"
+      responses:
+        '200':
+          description: "List of authors"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Author'
+
+  /author/{authorId}:
+    get:
+      tags:
+        - author
+      summary: "Get a specific author with their posts"
+      parameters:
+        - name: authorId
+          in: path
+          description: numeric ID of the author
+          required: true
+          schema:
+            type: integer
+            format: uint
+            example: 1
+      responses:
+        '200':
+          description: "Author info with their matching posts"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuthorWithPosts'
+        '404':
+          description: "No such author (haven't posted anything yet)"
+
+components:
+  schemas:
+    NewPostBody:
+      type: object
+      properties:
+        author:
+          type: string
+          example: "Marcsello"
+        text:
+          type: string
+          example: "This is an #example #post"
+    Post:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: uint64
+          example: 10
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-03-26T18:18:19.372375+02:00"
+        text:
+          type: string
+          example: "This is an #example #post"
+    PostWithAuthor:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: uint64
+          example: 10
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-03-26T18:18:19.372375+02:00"
+        text:
+          type: string
+          example: "This is an #example #post"
+        author:
+          $ref: '#/components/schemas/Author'
+    Tag:
+      type: object
+      properties:
+        tag:
+          type: string
+          example: "example"
+          description: "The hashtag text without the hashmark"
+        first_seen:
+          type: string
+          format: date-time
+          example: "2023-03-26T18:18:19.372375+02:00"
+          description: "The first time this hashtag was used"
+
+    TagWithPosts:
+      type: object
+      properties:
+        tag:
+          type: string
+          example: "example"
+          description: "The hashtag text without the hashmark"
+        first_seen:
+          type: string
+          format: date-time
+          example: "2023-03-26T18:18:19.372375+02:00"
+          description: "The first time this hashtag was used"
+        posts:
+          description: "A list of posts that have this hashtag"
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+    Author:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: uint
+          example: 1
+        first_seen:
+          type: string
+          format: date-time
+          example: "2023-03-26T18:18:19.372375+02:00"
+          description: "The first time this author posted something"
+        name:
+          type: string
+          example: "Marcsello"
+    AuthorWithPosts:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: uint
+          example: 1
+        first_seen:
+          type: string
+          format: date-time
+          example: "2023-03-26T18:18:19.372375+02:00"
+          description: "The first time this author posted something"
+        name:
+          type: string
+          example: "Marcsello"
+        posts:
+          description: "A list of posts created by this author"
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+    UserErrorResponse:
+      type: object
+      description: "The usual body of all 400 error responses"
+      properties:
+        reason:
+          type: string
+          example: "Something was invalid somewhere"
+    InternalServerErrorResponse:
+      type: object
+      description: "The usual body of all 500 error responses"
+      properties:
+        error:
+          type: string
+          example: "Could not do some magic"
