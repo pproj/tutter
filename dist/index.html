@@ -1,6 +1,59 @@
 <html>
-<head></head>
+<head>
+
+
+    <script>
+        function loadPosts() {
+            fetch("/api/post").then(response => response.json()).then(response => {
+
+                const posts = document.getElementById("posts")
+                posts.innerHTML = ""
+                response.forEach((field) => {
+                    var p = document.createElement("p");
+                    p.innerHTML = "<b>" + field.author.name + "</b>: " + field.text
+                    posts.append(p)
+                })
+            })
+
+        }
+
+        function onSubmit() {
+            var form = document.getElementById("form")
+            var formData = new FormData(form);
+            var object = {};
+            formData.forEach((value, key) => object[key] = value);
+            var json_data = JSON.stringify(object);
+
+           fetch('/api/post', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: json_data
+            }).then(resp => console.log(resp))
+
+
+        }
+
+
+    </script>
+
+</head>
 <body>
-Hello world!
+
+New post
+<form onsubmit="onSubmit(); return false" id="form">
+    Name: <input type="text" name="author" id="input_name"><br>
+    Post: <textarea name="text" id="input_text"></textarea>
+    <input type="submit">
+</form>
+
+Posts
+<button onclick="loadPosts()">Load</button>
+<div id="posts">
+</div>
+
+
 </body>
 </html>

@@ -216,6 +216,12 @@ components:
         text:
           type: string
           example: "This is an #example #post"
+        tags:
+          type: array
+          items:
+            type: string
+            description: "Hashtags in the post without the hashmark"
+            example: ["example", "post"]
     PostWithAuthor:
       type: object
       properties:
@@ -232,6 +238,12 @@ components:
           example: "This is an #example #post"
         author:
           $ref: '#/components/schemas/Author'
+        tags:
+          type: array
+          items:
+            type: string
+            description: "Hashtags in the post without the hashmark"
+            example: ["example", "post"]
     Tag:
       type: object
       properties:

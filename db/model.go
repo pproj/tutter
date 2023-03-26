@@ -1,16 +1,46 @@
 package db
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type Post struct {
-	ID        uint      `json:"id" gorm:"primarykey"`
-	CreatedAt time.Time `json:"created_at" gorm:"default:now()"`
-	Text      string    `json:"text"`
+	ID        uint64    `gorm:"primarykey"`
+	CreatedAt time.Time `gorm:"default:now()"`
+	Text      string
 
-	AuthorID uint    `json:"-"`
-	Author   *Author `json:"author" gorm:"belongsTo:Author"`
+	AuthorID uint
+	Author   *Author `gorm:"belongsTo:Author"`
 
-	Tags []*Tag `json:"-" gorm:"many2many:post_tags;"`
+	Tags []*Tag `gorm:"many2many:post_tags;"`
+}
+
+func (p Post) MarshalJSON() ([]byte, error) {
+
+	type MarshaledPost struct {
+		ID        uint64    `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		Text      string    `json:"text"`
+		Author    *Author   `json:"author,omitempty"`
+		Tags      []string  `json:"tags"`
+	}
+
+	tags := make([]string, len(p.Tags))
+	for i, tag := range p.Tags {
+		tags[i] = tag.Tag
+	}
+
+	mp := MarshaledPost{
+		ID:        p.ID,
+		CreatedAt: p.CreatedAt,
+		Text:      p.Text,
+		Author:    p.Author,
+		Tags:      tags,
+	}
+
+	return json.Marshal(mp)
+
 }
 
 type Tag struct {
