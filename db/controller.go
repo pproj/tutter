@@ -50,7 +50,8 @@ func GetPosts(filter *PostFilters) (*[]Post, error) {
 
 	// these must be the first ones
 	if filter.Tags != nil && len(filter.Tags) != 0 {
-		chain = chain.Where("tags.tag IN (?)", filter.Tags) // <- TODO: this still does not work
+		// https://github.com/go-gorm/gorm/issues/3287#issuecomment-908893840
+		chain = chain.Joins("JOIN post_tags on post_tags.post_id = posts.id JOIN tags on post_tags.tag_id = tags.id AND tags.tag in ? ", filter.Tags).Group("posts.id")
 	}
 
 	if filter.Authors != nil && len(filter.Authors) != 0 {

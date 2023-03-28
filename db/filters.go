@@ -48,5 +48,13 @@ func (pf PostFilters) Validate() error {
 		return fmt.Errorf("order must be either '" + FilterParamOrderAscending + "' or '" + FilterParamOrderDescending + "'")
 	}
 
+	if pf.Tags != nil && len(pf.Tags) > 0 {
+		for _, tag := range pf.Tags {
+			if tag == "" {
+				return fmt.Errorf("tag can not be empty string")
+			}
+		}
+	}
+
 	return nil
 }

@@ -1,0 +1,25 @@
+version: '3.9'
+services:
+  db:
+    image: postgres
+    container_name: postgres
+    environment:
+      POSTGRES_DB: tutter
+      POSTGRES_USER: tutter
+      POSTGRES_PASSWORD: jolesz
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  tutter:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - db
+    environment:
+      POSTGRESQL_DSN: postgres://tutter:jolesz@db:5432/tutter
+
+volumes:
+  db-data:

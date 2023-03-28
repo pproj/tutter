@@ -35,7 +35,7 @@ func createPost(ctx *gin.Context) {
 
 	match := tagRegex.FindAllStringSubmatch(newPostParams.Text, 260/2)
 
-	var tags []*db.Tag
+	tagSet := make(map[string]interface{})
 	for _, tagMatch := range match {
 		if len(tagMatch) == 0 {
 			break
@@ -50,8 +50,15 @@ func createPost(ctx *gin.Context) {
 			continue
 		}
 
+		tagSet[tagText] = nil // This is a "hack" to have sets in golang, we need it to de-duplicate tags
+
+	}
+
+	// And now turn the set into a list of tags
+	var tags []*db.Tag
+	for tag := range tagSet {
 		tags = append(tags, &db.Tag{
-			Tag: tagText,
+			Tag: tag,
 		})
 	}
 
