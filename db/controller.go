@@ -42,6 +42,68 @@ func CreatePost(post *Post) error {
 
 }
 
+func GetPosts(filter *PostFilters) (*[]Post, error) {
+	chain := db.Preload("Tags", func(subChain *gorm.DB) *gorm.DB {
+		return subChain.Omit("FirstSeen") // These cols would be omitted by the json serializer anyway
+		// note: ID can not be omitted otherwise the join would fail
+	})
+
+	// these must be the first ones
+	if filter.Tags != nil && len(filter.Tags) != 0 {
+		chain = chain.Where("tags.tag IN (?)", filter.Tags) // <- TODO: this still does not work
+	}
+
+	if filter.Authors != nil && len(filter.Authors) != 0 {
+		chain = chain.Where("author_id IN (?)", filter.Authors)
+	}
+	chain = chain.Preload("Author")
+
+	// and then these
+	var afterUsed bool
+	if filter.AfterId != nil {
+		chain = chain.Where("id > ?", *filter.AfterId)
+		afterUsed = true
+	} else if filter.After != nil {
+		chain = chain.Where("created_at > ?", *filter.After)
+		afterUsed = true
+	}
+
+	var beforeUsed bool
+	if filter.BeforeId != nil {
+		chain = chain.Where("id < ?", *filter.BeforeId)
+	} else if filter.Before != nil {
+		chain = chain.Where("created_at < ?", *filter.Before)
+	}
+
+	if filter.Order != nil {
+		// Order is higher order than the implicit ordering
+		switch *filter.Order {
+		case FilterParamOrderAscending:
+			chain = chain.Order("id ASC")
+		case FilterParamOrderDescending:
+			chain = chain.Order("id DESC")
+		}
+
+	} else if afterUsed && !beforeUsed { // implicit ordering
+		chain = chain.Order("id ASC")
+	} else if !afterUsed && beforeUsed { // implicit ordering
+		chain = chain.Order("id DESC")
+	}
+	// Otherwise, don't care
+
+	// Limit should be the last
+	if filter.Limit != nil {
+		chain = chain.Limit(int(*filter.Limit))
+	}
+
+	var allPosts []Post
+	result := chain.Find(&allPosts)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &allPosts, nil
+}
+
 func GetAllPosts() (*[]Post, error) {
 	var allPosts []Post
 	result := db.Preload("Author").Preload("Tags").Find(&allPosts)

@@ -4,6 +4,36 @@
 
     <script>
 
+        function randomString(len, charSet) {
+            charSet = charSet || 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ';
+            var randomString = '';
+            for (var i = 0; i < len; i++) {
+                var randomPoz = Math.floor(Math.random() * charSet.length);
+                randomString += charSet.substring(randomPoz,randomPoz+1);
+            }
+            return randomString;
+        }
+
+        function createPost(obj) {
+            return new Promise((resolve) => {
+                const json_data = JSON.stringify(obj);
+
+                fetch('/api/post', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: json_data
+                }).then(response => {
+                    response.json().then(respJson => {
+                        console.log(respJson)
+                        resolve({response, respJson})
+                    })
+                })
+            })
+        }
+
         function loadSomethingSomewhere(endpoint, tag, formatter) {
             const startTime = new Date();
             fetch(endpoint).then(response => {
@@ -35,11 +65,11 @@
         }
 
         function loadPosts() {
-            loadSomethingSomewhere("/api/post", "posts", (field) => "<b>" + field.author.name + "</b>: " + field.text)
+            loadSomethingSomewhere("/api/post", "posts", (field) => `<b>${field.author.name}</b>: ${field.text}`)
         }
 
         function loadAuthors() {
-            loadSomethingSomewhere("/api/author", "authors", (field) => field.name)
+            loadSomethingSomewhere("/api/author", "authors", (field) => `<b>${field.id}</b>: ${field.name}`)
         }
 
         function loadTags() {
@@ -51,26 +81,40 @@
             const formData = new FormData(form);
             let object = {};
             formData.forEach((value, key) => object[key] = value);
-            const json_data = JSON.stringify(object);
-
-            fetch('/api/post', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: json_data
-            }).then(response => {
-                response.json().then(respJson => {
-                    const respHolder = document.getElementById("resp")
-                    const resStatsHolder = document.getElementById("respStats")
-                    resStatsHolder.innerHTML = "<b>Status:</b> " + response.status + " " + response.statusText
-                    respHolder.innerHTML = JSON.stringify(respJson)
-                    form.reset()
-                    loadPosts()
-                })
+            createPost(object).then(({response, respJson}) => {
+                console.log(respJson)
+                const respHolder = document.getElementById("resp")
+                const resStatsHolder = document.getElementById("respStats")
+                resStatsHolder.innerHTML = "<b>Status:</b> " + response.status + " " + response.statusText
+                respHolder.innerHTML = JSON.stringify(respJson)
+                form.reset()
+                loadPosts()
             })
+        }
 
+        function onGenerateRandomPosts() {
+            const randomPostCounter = document.getElementById("randomPostCounter")
+            const count = randomPostCounter.value;
+
+            const randomPostAuthor = document.getElementById("randomPostAuthor")
+            const presetAuthor = randomPostAuthor.value
+
+            let all_promises = []
+
+            for (let i=0; i < count; i++) {
+                let author = presetAuthor
+                if (author === "") {
+                    author = (Math.random() + 1).toString(36).substring(7); // funny one
+                }
+                const text = randomString(Math.ceil(Math.random() * 100) + 20);
+                all_promises.push(createPost({author, text}))
+            }
+
+            Promise.all(all_promises).then(() => {
+                const randomPostsResult = document.getElementById("randomPostsResult")
+                randomPostsResult.innerHTML = "done"
+                loadPosts()
+            })
 
         }
 
@@ -102,26 +146,33 @@
     </div>
 </div>
 
-    <div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
-        <h2>Posts</h2>
-        <button onclick="loadPosts()">Load</button>
-        <div id="posts">
-        </div>
+<div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
+    <h2>Posts</h2>
+    <button onclick="loadPosts()">Load</button>
+    <div id="posts">
     </div>
+</div>
 
-    <div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
-        <h2>Authors</h2>
-        <button onclick="loadAuthors()">Load</button>
-        <div id="authors">
-        </div>
+<div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
+    <h2>Authors</h2>
+    <button onclick="loadAuthors()">Load</button>
+    <div id="authors">
     </div>
+</div>
 
-    <div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
-        <h2>Tags</h2>
-        <button onclick="loadTags()">Load</button>
-        <div id="tags">
-        </div>
+<div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
+    <h2>Tags</h2>
+    <button onclick="loadTags()">Load</button>
+    <div id="tags">
     </div>
+</div>
+
+<div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
+    <h2>Generate random posts</h2>
+    Author: <input type="text" id="randomPostAuthor" placeholder="leave empty for random author">&nbsp;Count: <input type="number" id="randomPostCounter" value="10" min="1" step="1"/>&nbsp;<button onclick="onGenerateRandomPosts()">Generate</button>
+    <div id="randomPostsResult">
+    </div>
+</div>
 
 </body>
 </html>

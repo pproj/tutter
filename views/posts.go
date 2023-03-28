@@ -89,11 +89,23 @@ func createPost(ctx *gin.Context) {
 
 func listPosts(ctx *gin.Context) {
 
-	// TODO: various filtering based on params
+	var queryParams db.PostFilters
+	err := ctx.ShouldBindQuery(&queryParams)
+	if err != nil {
+		handleUserError(ctx, err)
+		return
+	}
 
-	posts, err := db.GetAllPosts()
+	err = queryParams.Validate()
+	if err != nil {
+		handleUserError(ctx, err)
+		return
+	}
+
+	posts, err := db.GetPosts(&queryParams)
 	if err != nil {
 		handleInternalError(ctx, err)
+		return
 	}
 
 	ctx.JSON(200, posts)

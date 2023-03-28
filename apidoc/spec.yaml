@@ -8,12 +8,12 @@ info:
     
     ## Posts
     
-    For storage concerns, the maximum post length allowed on Tutter is only 260 UTF-8 characters long.
+    For storage concerns, the maximum post length allowed on Tutter is only 260 UTF-8 symbol long.
     
     ## Users
     
     There is no authentication of any kind to use Tutter. You may post using any name you want. 
-    Registration is also not reqired to use Tutter. New user accounts created upon the first time they post something.
+    Registration is also not required to use Tutter. New user accounts created upon the first time they post something.
     
     Similarly to posts, the maximum length of a username are 32 characters.
     
@@ -21,7 +21,7 @@ info:
     
     Hashtags are supported in posts. They are automatically parsed from the text of the posts.
     
-    A hashtag may only consist of lower case latters from the english alphabet and numbers. Hashtags are parsed up to the first non-allowed characted (usually a whitespace) or the end of the post. (For convinince upper case letters are allowed during parsing, but they will be treated lowercase) 
+    A hashtag may only consist of lower case letters from the english alphabet and numbers. Hashtags are parsed up to the first non-allowed symbol (usually a whitespace) or the end of the post. (For convenience upper case letters are allowed during parsing, but they will be treated lowercase) 
     
     There is also and endpoint to fetch posts which contain a specific hashtag.
 
@@ -72,8 +72,129 @@ paths:
       tags:
         - post
       summary: "List posts"
-      description: "Altrough this endpoint allow listing of all posts in a single response it is highly unadvised for preformance concenrns. Please always use some filters or limits!"
-      parameters: []
+      description: |
+        Although this endpoint allow listing of all posts in a single response it is highly unadvised for performance concerns. Please always use some filters or limits!
+        
+        All ordering applied by the query parameters are based on the post ID.
+      parameters:
+        - name: before_id
+          in: query
+          description: |
+            Limit results to posts with *lower* id than the given number (non-inclusion).
+            
+            **Warning:** Using `before_id` without using `after` or `after_id` may change the sorting order to **descending**, to make sense when using `limit`. (This may be overridden by `order`)
+            
+            **Warning:** Can **not** be used together with `before`.
+            
+            **Note:** The plus sign must be escaped in the query string to `%2b` otherwise it would fail to parse.
+            
+            **Hint:** You may use this together with `after` or `after_id` to specify a range.
+          required: false
+          schema:
+            type: integer
+            format: uint64
+            example: 10
+        - name: after_id
+          in: query
+          description: |
+            Limit results to posts with *higher* id than the given number (non-inclusion).
+            
+            **Warning:** Using `after_id` without using `before` or `before_id` may change the sorting order to **ascending**, to make sense when using `limit`. (This may be overridden by `order`)
+            
+            **Warning:** Can **not** be used together with `after`.
+            
+            **Note:** The plus sign must be escaped in the query string to `%2b` otherwise it would fail to parse.
+            
+            **Hint:** You may use this together with `before` or `before_id` to specify a range.
+          required: false
+          schema:
+            type: integer
+            format: uint64
+            example: 10
+        - name: before
+          in: query
+          description: |
+            Limit results to posts created *before* the given timestamp (non-inclusion).
+            
+            **Warning:** Using `before` without using `after` or `after_id` may change the sorting order to **descending**, to make sense when using `limit`. (This may be overridden by `order`)
+            
+            **Warning:** Can **not** be used together with `before_id`.
+            
+            **Note:** The plus sign must be escaped in the query string to `%2b` otherwise it would fail to parse.
+            
+            **Hint:** You may use this together with `after` or `after_id` to specify a range.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2023-03-26T18:18:19.372375+02:00"
+        - name: after
+          in: query
+          description: |
+            Limit results to posts created *after* the given timestamp (non-inclusion).
+            
+            **Warning:** Using `after` without using `before` or `before_id` may change the sorting order to **ascending**, to make sense when using `limit`. (This may be overridden by `order`)
+            
+            **Warning:** Can **not** be used together with `after_id`.
+            
+            **Note:** The plus sign must be escaped in the query string to `%2b` otherwise it would fail to parse.
+            
+            **Hint:** You may use this together with `before` or `before_id` to specify a range.
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2023-03-26T18:18:19.372375+02:00"
+        - name: order
+          in: query
+          description: |
+            Change the ordering of the posts to either *ascending* or *descending* **before** applying limit.
+            
+            **Warning:** This will override the implicit ordering by `after`, `after_id`, `before` or `before_id`.
+            
+            **Hint:** You may use this together with `limit` to get the *last N posts*.
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            example: "asc"
+        - name: tag
+          in: query
+          description: |
+            When specified, filter to posts that have the given tag(s).
+            May be specified multiple times, to match more than one tag.
+
+          required: false
+          schema:
+            type: string
+            example: example
+        - name: author_id
+          in: query
+          description: |
+            When specified, filter to posts from a given author by their ID.
+            May be specified multiple times, to match more than one author.
+
+          required: false
+          schema:
+            type: integer
+            format: uint
+            example: 12
+        - name: limit
+          in: query
+          description: |
+            Limit the maximum number of results.
+            
+            
+            **Note:** Must be >0
+            
+            
+            **Hint:** Useful in combination with `before`, `before_id`, `after` or `after_id`.
+
+          required: false
+          schema:
+            type: integer
+            format: uint
+            example: 10
       responses:
         '200':
           description: "List of matching posts (or empty array for no match)"
@@ -129,7 +250,7 @@ paths:
       tags:
         - tag
       summary: "Get a specific hashtag with related posts"
-      description: "Altrough this endpoint allow listing of all posts realted to a hashtag in a single response may raise preformance concenrns. It is recommended to use some filters or limits!"
+      description: "Although this endpoint allow listing of all posts related to a hashtag in a single response may raise performance concerns. It is recommended to use some filters or limits!"
       parameters:
         - name: hashtag
           in: path
@@ -196,6 +317,7 @@ components:
   schemas:
     NewPostBody:
       type: object
+      description: "All HTML tags are automatically removed but maximum post length checked before that."
       properties:
         author:
           type: string
