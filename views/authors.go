@@ -8,7 +8,20 @@ import (
 )
 
 func listAuthors(ctx *gin.Context) {
-	authors, err := db.GetAllAuthors()
+	var queryParams db.CommonPaginationParams
+	err := ctx.ShouldBindQuery(&queryParams)
+	if err != nil {
+		handleUserError(ctx, err)
+		return
+	}
+
+	err = queryParams.Validate()
+	if err != nil {
+		handleUserError(ctx, err)
+		return
+	}
+
+	authors, err := db.GetAuthors(&queryParams)
 	if err != nil {
 		handleInternalError(ctx, err)
 		return

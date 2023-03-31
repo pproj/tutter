@@ -7,7 +7,20 @@ import (
 )
 
 func listTags(ctx *gin.Context) {
-	tags, err := db.GetAllTags()
+	var queryParams db.CommonPaginationParams
+	err := ctx.ShouldBindQuery(&queryParams)
+	if err != nil {
+		handleUserError(ctx, err)
+		return
+	}
+
+	err = queryParams.Validate()
+	if err != nil {
+		handleUserError(ctx, err)
+		return
+	}
+
+	tags, err := db.GetTags(&queryParams)
 	if err != nil {
 		handleInternalError(ctx, err)
 	}
