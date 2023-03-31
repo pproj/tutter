@@ -10,7 +10,7 @@ const (
 	FilterParamOrderDescending = "desc"
 )
 
-type CommonPagination struct {
+type CommonPaginationParams struct {
 	BeforeId *uint64    `form:"before_id"`
 	AfterId  *uint64    `form:"after_id"`
 	Before   *time.Time `form:"before"`
@@ -19,52 +19,52 @@ type CommonPagination struct {
 	Order    *string    `form:"order"`
 }
 
-type PostFilters struct {
-	CommonPagination
+type PostFilterParams struct {
+	CommonPaginationParams
 	Tags    []string `form:"tag"`
 	Authors []uint   `form:"author_id"`
 }
 
-func (cp CommonPagination) Validate() error {
+func (p CommonPaginationParams) Validate() error {
 
-	if cp.Before != nil && cp.BeforeId != nil {
+	if p.Before != nil && p.BeforeId != nil {
 		return fmt.Errorf("before and before_id must not be used together")
 	}
 
-	if cp.After != nil && cp.AfterId != nil {
+	if p.After != nil && p.AfterId != nil {
 		return fmt.Errorf("after and after_id must not be used together")
 	}
 
 	// This really grinds my gears...
-	if cp.BeforeId != nil && cp.AfterId != nil && *cp.BeforeId < *cp.AfterId {
+	if p.BeforeId != nil && p.AfterId != nil && *p.BeforeId < *p.AfterId {
 		return fmt.Errorf("before must be after after")
 	}
 
-	if cp.Before != nil && cp.After != nil && cp.Before.Before(*cp.After) {
+	if p.Before != nil && p.After != nil && p.Before.Before(*p.After) {
 		return fmt.Errorf("before must be after after")
 	}
 
-	if cp.Limit != nil && *cp.Limit == 0 {
+	if p.Limit != nil && *p.Limit == 0 {
 		return fmt.Errorf("limit 0 makes no sense")
 	}
 
-	if (cp.Order != nil) && (*cp.Order != FilterParamOrderAscending && *cp.Order != FilterParamOrderDescending) {
+	if (p.Order != nil) && (*p.Order != FilterParamOrderAscending && *p.Order != FilterParamOrderDescending) {
 		return fmt.Errorf("order must be either '" + FilterParamOrderAscending + "' or '" + FilterParamOrderDescending + "'")
 	}
 
 	return nil
 }
 
-func (pf PostFilters) Validate() error {
+func (p PostFilterParams) Validate() error {
 	// Call parent validations first
-	err := pf.CommonPagination.Validate()
+	err := p.CommonPaginationParams.Validate()
 	if err != nil {
 		return err
 	}
 
 	// Custom validation for this type
-	if pf.Tags != nil && len(pf.Tags) > 0 {
-		for _, tag := range pf.Tags {
+	if p.Tags != nil && len(p.Tags) > 0 {
+		for _, tag := range p.Tags {
 			if tag == "" {
 				return fmt.Errorf("tag can not be empty string")
 			}

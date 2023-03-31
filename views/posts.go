@@ -96,7 +96,7 @@ func createPost(ctx *gin.Context) {
 
 func listPosts(ctx *gin.Context) {
 
-	var queryParams db.PostFilters
+	var queryParams db.PostFilterParams
 	err := ctx.ShouldBindQuery(&queryParams)
 	if err != nil {
 		handleUserError(ctx, err)

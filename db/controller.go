@@ -42,7 +42,7 @@ func CreatePost(post *Post) error {
 
 }
 
-func GetPosts(filter *PostFilters) (*[]Post, error) {
+func GetPosts(filter *PostFilterParams) (*[]Post, error) {
 	chain := db.Preload("Tags", func(subChain *gorm.DB) *gorm.DB {
 		return subChain.Omit("FirstSeen") // These cols would be omitted by the json serializer anyway
 		// note: ID can not be omitted otherwise the join would fail
