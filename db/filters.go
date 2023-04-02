@@ -32,8 +32,13 @@ type associatedFilterParams struct {
 	Fill *bool `form:"fill"`
 }
 
-type TagFilterParams associatedFilterParams
-type AuthorFilterParams associatedFilterParams
+type TagFilterParams struct {
+	associatedFilterParams // having simply the type here does not work for some reason, Validate() will call common instead of associated
+}
+
+type AuthorFilterParams struct {
+	associatedFilterParams
+}
 
 // CommonPaginationParams
 
