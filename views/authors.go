@@ -36,7 +36,21 @@ func getAuthor(ctx *gin.Context) {
 		handleUserError(ctx, err)
 		return
 	}
-	author, err := db.GetAuthorById(uint(id))
+
+	var queryParams db.AuthorFilterParams
+	err = ctx.ShouldBindQuery(&queryParams)
+	if err != nil {
+		handleUserError(ctx, err)
+		return
+	}
+
+	err = queryParams.Validate()
+	if err != nil {
+		handleUserError(ctx, err)
+		return
+	}
+
+	author, err := db.GetAuthorById(uint(id), &queryParams)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			ctx.AbortWithStatus(404)
@@ -45,8 +59,6 @@ func getAuthor(ctx *gin.Context) {
 		handleInternalError(ctx, err)
 		return
 	}
-
-	// TODO: limits
 
 	ctx.JSON(200, author)
 

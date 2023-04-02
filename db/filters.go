@@ -12,18 +12,19 @@ const (
 )
 
 type CommonPaginationParams struct {
-	BeforeId *uint64    `form:"before_id"`
-	AfterId  *uint64    `form:"after_id"`
-	Before   *time.Time `form:"before"`
-	After    *time.Time `form:"after"`
-	Limit    *uint      `form:"limit"`
-	Order    *string    `form:"order"`
+	Limit  *uint   `form:"limit"`
+	Offset *uint   `form:"offset"`
+	Order  *string `form:"order"`
 }
 
 type PostFilterParams struct {
 	CommonPaginationParams
-	Tags    []string `form:"tag"`
-	Authors []uint   `form:"author_id"`
+	BeforeId *uint64    `form:"before_id"`
+	AfterId  *uint64    `form:"after_id"`
+	Before   *time.Time `form:"before"`
+	After    *time.Time `form:"after"`
+	Tags     []string   `form:"tag"`
+	Authors  []uint     `form:"author_id"`
 }
 
 type associatedFilterParams struct {
@@ -34,7 +35,54 @@ type associatedFilterParams struct {
 type TagFilterParams associatedFilterParams
 type AuthorFilterParams associatedFilterParams
 
+// CommonPaginationParams
+
 func (p CommonPaginationParams) Validate() error {
+
+	if p.Limit != nil && *p.Limit == 0 {
+		return fmt.Errorf("limit 0 makes no sense")
+	}
+
+	if (p.Order != nil) && (*p.Order != FilterParamOrderAscending && *p.Order != FilterParamOrderDescending) {
+		return fmt.Errorf("order must be either '%s' or '%s'", FilterParamOrderAscending, FilterParamOrderDescending)
+	}
+
+	return nil
+}
+
+func (p CommonPaginationParams) Apply(chain *gorm.DB) *gorm.DB {
+
+	if p.Order != nil {
+		// Order is higher order than the implicit ordering
+		switch *p.Order {
+		case FilterParamOrderAscending:
+			chain = chain.Order("id ASC")
+		case FilterParamOrderDescending:
+			chain = chain.Order("id DESC")
+		}
+	}
+
+	// Apply offset if needed
+	if p.Offset != nil {
+		chain = chain.Offset(int(*p.Offset))
+	}
+
+	// Limit should be the last
+	if p.Limit != nil {
+		chain = chain.Limit(int(*p.Limit))
+	}
+
+	return chain
+}
+
+// PostFilterParams
+
+func (p PostFilterParams) Validate() error {
+	// Call parent validations first
+	err := p.CommonPaginationParams.Validate()
+	if err != nil {
+		return err
+	}
 
 	if p.Before != nil && p.BeforeId != nil {
 		return fmt.Errorf("before and before_id must not be used together")
@@ -51,66 +99,6 @@ func (p CommonPaginationParams) Validate() error {
 
 	if p.Before != nil && p.After != nil && p.Before.Before(*p.After) {
 		return fmt.Errorf("before must be after after")
-	}
-
-	if p.Limit != nil && *p.Limit == 0 {
-		return fmt.Errorf("limit 0 makes no sense")
-	}
-
-	if (p.Order != nil) && (*p.Order != FilterParamOrderAscending && *p.Order != FilterParamOrderDescending) {
-		return fmt.Errorf("order must be either '" + FilterParamOrderAscending + "' or '" + FilterParamOrderDescending + "'")
-	}
-
-	return nil
-}
-
-func (p CommonPaginationParams) Apply(chain *gorm.DB) *gorm.DB {
-
-	var afterUsed bool
-	if p.AfterId != nil {
-		chain = chain.Where("id > ?", *p.AfterId)
-		afterUsed = true
-	} else if p.After != nil {
-		chain = chain.Where("created_at > ?", *p.After)
-		afterUsed = true
-	}
-
-	var beforeUsed bool
-	if p.BeforeId != nil {
-		chain = chain.Where("id < ?", *p.BeforeId)
-	} else if p.Before != nil {
-		chain = chain.Where("created_at < ?", *p.Before)
-	}
-
-	if p.Order != nil {
-		// Order is higher order than the implicit ordering
-		switch *p.Order {
-		case FilterParamOrderAscending:
-			chain = chain.Order("id ASC")
-		case FilterParamOrderDescending:
-			chain = chain.Order("id DESC")
-		}
-
-	} else if afterUsed && !beforeUsed { // implicit ordering
-		chain = chain.Order("id ASC")
-	} else if !afterUsed && beforeUsed { // implicit ordering
-		chain = chain.Order("id DESC")
-	}
-	// Otherwise, don't care
-
-	// Limit should be the last
-	if p.Limit != nil {
-		chain = chain.Limit(int(*p.Limit))
-	}
-
-	return chain
-}
-
-func (p PostFilterParams) Validate() error {
-	// Call parent validations first
-	err := p.CommonPaginationParams.Validate()
-	if err != nil {
-		return err
 	}
 
 	// Custom validation for this type
@@ -142,11 +130,71 @@ func (p PostFilterParams) Apply(chain *gorm.DB) *gorm.DB {
 	}
 	chain = chain.Preload("Author")
 
+	// and then these filters
+	var afterUsed bool
+	if p.AfterId != nil {
+		chain = chain.Where("id > ?", *p.AfterId)
+		afterUsed = true
+	} else if p.After != nil {
+		chain = chain.Where("created_at > ?", *p.After)
+		afterUsed = true
+	}
+
+	var beforeUsed bool
+	if p.BeforeId != nil {
+		chain = chain.Where("id < ?", *p.BeforeId)
+		beforeUsed = true
+	} else if p.Before != nil {
+		chain = chain.Where("created_at < ?", *p.Before)
+		beforeUsed = true
+	}
+
+	// implicit ordering
+
+	if p.Order == nil {
+		if afterUsed && !beforeUsed {
+			chain = chain.Order("id ASC")
+		} else if !afterUsed && beforeUsed {
+			chain = chain.Order("id DESC")
+		}
+	}
+
 	// and then these
 	return p.CommonPaginationParams.Apply(chain)
 }
 
+// associatedFilterParams
+
 func (p associatedFilterParams) Validate() error {
-	// Call parent validations first
+
+	if p.Fill != nil && *p.Fill == false {
+		// if fill is disabled no params should be allowed
+		if p.Limit != nil && p.Offset != nil && p.Order != nil {
+			return fmt.Errorf("using any pagination params while fill is disabled makes no sense")
+		}
+	}
+
 	return p.CommonPaginationParams.Validate()
+}
+
+// TagFilterParams
+
+func (p TagFilterParams) Apply(chain *gorm.DB) *gorm.DB {
+	if p.Fill == nil || *p.Fill == true {
+		chain = chain.Preload("Posts", func(subChain *gorm.DB) *gorm.DB {
+			return p.CommonPaginationParams.Apply(subChain)
+		}).Preload("Posts.Author").Preload("Posts.Tags")
+	}
+	return chain
+}
+
+// AuthorFilterParams
+
+func (p AuthorFilterParams) Apply(chain *gorm.DB) *gorm.DB {
+	if p.Fill == nil || *p.Fill == true {
+		chain = chain.Preload("Posts", func(subChain *gorm.DB) *gorm.DB {
+			return p.CommonPaginationParams.Apply(subChain)
+		}).Preload("Posts.Tags")
+	}
+	return chain
 }

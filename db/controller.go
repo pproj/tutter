@@ -88,9 +88,9 @@ func GetAllAuthors() (*[]Author, error) {
 	return &authors, nil
 }
 
-func GetAuthorById(id uint) (*Author, error) {
+func GetAuthorById(id uint, filter *AuthorFilterParams) (*Author, error) {
 	var author Author
-	result := db.Preload("Posts").Find(&author, id)
+	result := filter.Apply(db).Find(&author, id)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -117,9 +117,9 @@ func GetAllTags() (*[]Tag, error) {
 	return &tags, nil
 }
 
-func GetTagByTag(tagStr string) (*Tag, error) {
+func GetTagByTag(tagStr string, filter *TagFilterParams) (*Tag, error) {
 	var tag Tag
-	result := db.Preload("Posts").Where("tag = ?", tagStr).Preload("Posts.Author").Preload("Posts.Tags").First(&tag)
+	result := filter.Apply(db.Where("tag = ?", tagStr)).First(&tag)
 	if result.Error != nil {
 		return nil, result.Error
 	}
