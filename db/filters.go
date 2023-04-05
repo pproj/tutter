@@ -27,17 +27,17 @@ type PostFilterParams struct {
 	Authors  []uint     `form:"author_id"`
 }
 
-type associatedFilterParams struct {
+type fillFilterParams struct {
 	CommonPaginationParams
 	Fill *bool `form:"fill"`
 }
 
-type TagFilterParams struct {
-	associatedFilterParams // having simply the type here does not work for some reason, Validate() will call common instead of associated
+type TagFillFilterParams struct {
+	fillFilterParams // having simply the type here does not work for some reason, Validate() will call common instead of associated
 }
 
-type AuthorFilterParams struct {
-	associatedFilterParams
+type AuthorFillFilterParams struct {
+	fillFilterParams
 }
 
 // CommonPaginationParams
@@ -168,9 +168,9 @@ func (p PostFilterParams) Apply(chain *gorm.DB) *gorm.DB {
 	return p.CommonPaginationParams.Apply(chain)
 }
 
-// associatedFilterParams
+// fillFilterParams
 
-func (p associatedFilterParams) Validate() error {
+func (p fillFilterParams) Validate() error {
 
 	if p.Fill != nil && *p.Fill == false {
 		// if fill is disabled no params should be allowed
@@ -182,9 +182,9 @@ func (p associatedFilterParams) Validate() error {
 	return p.CommonPaginationParams.Validate()
 }
 
-// TagFilterParams
+// TagFillFilterParams
 
-func (p TagFilterParams) Apply(chain *gorm.DB) *gorm.DB {
+func (p TagFillFilterParams) Apply(chain *gorm.DB) *gorm.DB {
 	if p.Fill == nil || *p.Fill == true {
 		chain = chain.Preload("Posts", func(subChain *gorm.DB) *gorm.DB {
 			return p.CommonPaginationParams.Apply(subChain)
@@ -193,9 +193,9 @@ func (p TagFilterParams) Apply(chain *gorm.DB) *gorm.DB {
 	return chain
 }
 
-// AuthorFilterParams
+// AuthorFillFilterParams
 
-func (p AuthorFilterParams) Apply(chain *gorm.DB) *gorm.DB {
+func (p AuthorFillFilterParams) Apply(chain *gorm.DB) *gorm.DB {
 	if p.Fill == nil || *p.Fill == true {
 		chain = chain.Preload("Posts", func(subChain *gorm.DB) *gorm.DB {
 			return p.CommonPaginationParams.Apply(subChain)

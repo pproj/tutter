@@ -37,7 +37,7 @@ func getTag(ctx *gin.Context) {
 		return
 	}
 
-	var queryParams db.TagFilterParams
+	var queryParams db.TagFillFilterParams
 	err := ctx.ShouldBindQuery(&queryParams)
 	if err != nil {
 		handleUserError(ctx, err)

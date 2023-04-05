@@ -37,7 +37,7 @@ func getAuthor(ctx *gin.Context) {
 		return
 	}
 
-	var queryParams db.AuthorFilterParams
+	var queryParams db.AuthorFillFilterParams
 	err = ctx.ShouldBindQuery(&queryParams)
 	if err != nil {
 		handleUserError(ctx, err)
