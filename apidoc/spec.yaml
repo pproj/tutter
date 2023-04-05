@@ -162,7 +162,7 @@ paths:
           in: query
           description: |
             When specified, filter to posts that have the given tag(s).
-            May be specified multiple times, to match more than one tag.
+            May be specified multiple times, to match more than one tag (union/OR).
 
           required: false
           schema:
@@ -172,7 +172,7 @@ paths:
           in: query
           description: |
             When specified, filter to posts from a given author by their ID.
-            May be specified multiple times, to match more than one author.
+            May be specified multiple times, to match more than one author (union/OR).
 
           required: false
           schema:

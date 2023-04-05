@@ -33,7 +33,7 @@ func createPost(ctx *gin.Context) {
 		return
 	}
 
-	match := tagRegex.FindAllStringSubmatch(newPostParams.Text, 260/2)
+	match := tagRegex.FindAllStringSubmatch(newPostParams.Text, 260/3)
 
 	tagSet := make(map[string]interface{})
 	for _, tagMatch := range match {
