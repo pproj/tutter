@@ -124,19 +124,57 @@ class CreateSinglePostWithTags(TestCaseBase):
         expect_json_tree(r.json(), expected_author)
 
 
+class CreateInvalidPosts(TestCaseBase):
+    def run(self):
+        invalid_posts = [
+            {
+                "author": "",
+                "text": ""
+            },
+            {
+                "author": "",
+                "text": "alma"
+            },
+            {
+                "author": "alma",
+                "text": ""
+            },
+            {
+                "author": "alma",
+                "text": "a"*261
+            },
+            {
+                "author": "a"*33,
+                "text": "alma"
+            },
+        ]
+
+        expected_result = {
+            "reason": MagicExists()
+        }
+
+        for post in invalid_posts:
+            r = self.request_and_expect_status("POST", "/api/post", 400, json=post)
+            expect_json_tree(r.json(), expected_result)
+
+        r = self.request_and_expect_status("GET", "/api/post", 200)
+        assert len(r.json()) == 0
+
+
 class CreatePostWithInvalidTags(TestCaseBase):
     def run(self):
-
         cases = [
             ("@#", []),
+            ("#@ #- #= #/", []),
+            ("# # # #", []),
             ("####asd", ['asd']),
-            ("#"*160, []),
+            ("#" * 260, []),
             ("#asdÁÁÁÁ", ['asd']),
             ("#tutter #tutter #tutter #tutter", ['tutter']),
+            ("#tutter #TuTteR #TUTTER #tuTter #tUtteR", ['tutter']),
         ]
 
         for message, expected_tags in cases:
-
             post = {
                 "author": "alma",
                 "text": message

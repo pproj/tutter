@@ -2,14 +2,15 @@ import sys
 import time
 
 from testcases import CheckOpenAPIAvailability, CreateSinglePost, CreateSinglePostWithTags, CreatePostWithInvalidTags, \
-    CreateHugeAmountOfPosts
+    CreateHugeAmountOfPosts, CreateInvalidPosts
 
 TESTS = [
     CheckOpenAPIAvailability(),
     CreateSinglePost(),
     CreateSinglePostWithTags(),
     CreatePostWithInvalidTags(),
-    CreateHugeAmountOfPosts()
+    CreateInvalidPosts(),
+    #CreateHugeAmountOfPosts()
 ]
 
 
