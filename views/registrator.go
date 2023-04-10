@@ -1,14 +1,25 @@
 package views
 
-import "github.com/gin-gonic/gin"
+import (
+	"git.sch.bme.hu/pp23/tutter/db"
+	"git.sch.bme.hu/pp23/tutter/observer"
+	"github.com/gin-gonic/gin"
+)
 
-func RegisterEndpoints(routerGroup *gin.RouterGroup) {
+func RegisterEndpoints(routerGroup *gin.RouterGroup) error {
 
+	// First, setup observer for the long polling thing
+	id, err := db.GetLastPostId()
+	if err != nil {
+		return err
+	}
+	newPostObserver = observer.NewNewIdObserver(id)
+	routerGroup.GET("/poll", longPoll)
+
+	// Then the REST
 	routerGroup.POST("/post", createPost)
 	routerGroup.GET("/post", listPosts)
 	routerGroup.GET("/post/:id", getPost)
-
-	routerGroup.GET("/poll", longPoll)
 
 	routerGroup.GET("/tag", listTags)
 	routerGroup.GET("/tag/:tag", getTag)
@@ -16,4 +27,5 @@ func RegisterEndpoints(routerGroup *gin.RouterGroup) {
 	routerGroup.GET("/author", listAuthors)
 	routerGroup.GET("/author/:id", getAuthor)
 
+	return nil
 }

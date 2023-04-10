@@ -52,7 +52,10 @@ func main() {
 
 	// Serve api
 	api := router.Group("/api")
-	views.RegisterEndpoints(api)
+	err = views.RegisterEndpoints(api)
+	if err != nil {
+		panic(err)
+	}
 
 	// Add API documentation... it may be ugly, but it works well.
 	api.StaticFile("/", "apidoc/apidoc.html")

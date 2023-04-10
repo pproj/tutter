@@ -90,6 +90,11 @@ func createPost(ctx *gin.Context) {
 		return
 	}
 
+	err = newPostObserver.Notify(newPost.ID)
+	if err != nil {
+		// TODO: log
+	}
+
 	ctx.JSON(201, newPost)
 
 }

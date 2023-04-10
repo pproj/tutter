@@ -68,6 +68,30 @@ func GetPostById(id uint) (*Post, error) {
 	return &post, nil
 }
 
+// GetLastPostId returns the id of the last post or 0 if no posts were published yet (post id starts with 1)
+func GetLastPostId() (uint64, error) {
+	var maxid *uint64
+	result := db.Table("posts").Select("MAX(id)").Row()
+	if result.Err() != nil {
+		if result.Err() == gorm.ErrRecordNotFound {
+			return 0, nil
+		} else {
+			return 0, result.Err()
+		}
+	}
+
+	err := result.Scan(&maxid)
+	if err != nil {
+		return 0, err
+	}
+	if maxid == nil {
+		return 0, nil
+	}
+
+	return *maxid, nil
+
+}
+
 // AUTHORS
 
 func GetAuthors(filter *CommonPaginationParams) (*[]Author, error) {

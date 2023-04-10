@@ -22,24 +22,22 @@ func longPoll(ctx *gin.Context) {
 			return
 		}
 	} else {
-		last = 0 // TODO: Get current max id, and document that it is not a good idea to use it
+		last = newPostObserver.LastId()
+		// TODO: Document somewhere that it's unlikely the best option
 	}
 
-	newMsgChan := make(chan uint64)
-	go func() {
-		time.Sleep(time.Second * 30)
-		newMsgChan <- 2
-	}()
+	newIdChan, err := newPostObserver.Subscribe(ctx2)
 
 BigWait:
 	for { // This is a long, complex wait thing
 		select {
-		case newId := <-newMsgChan:
+		case newId := <-newIdChan:
 
 			if newId <= last {
 				continue BigWait
 			}
 
+			// We don't actually have to keep this value, as the query uses the last id anyways
 			break BigWait
 
 		case <-ctx2.Done():
@@ -59,6 +57,12 @@ BigWait:
 		handleInternalError(ctx, err)
 		return
 	}
-	ctx.JSON(200, posts)
+
+	if posts == nil || len(*posts) == 0 {
+		// This is a highly unlikely situation, but I like to tell myself that I have prepared for everything
+		ctx.Status(204)
+	} else {
+		ctx.JSON(200, posts)
+	}
 
 }
