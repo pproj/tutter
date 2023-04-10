@@ -3,7 +3,7 @@ import time
 import traceback
 
 from testcases import CheckOpenAPIAvailability, CreateSinglePost, CreateSinglePostWithTags, CreatePostWithEdgeCaseTags, \
-    CreateHugeAmountOfPosts, CreateInvalidPosts, PostFiltersByAssociation, PostFiltersLocalBasic
+    CreateHugeAmountOfPosts, CreateInvalidPosts, PostFiltersByAssociation, PostFiltersLocalBasic, LongPollRace
 
 TESTS = [
     CheckOpenAPIAvailability(),
@@ -14,6 +14,7 @@ TESTS = [
     PostFiltersByAssociation(),
     PostFiltersLocalBasic(),
     CreateHugeAmountOfPosts(),
+    LongPollRace()
 ]
 
 
@@ -23,10 +24,18 @@ def main():
     passed = 0
     failed = 0
     total = 0
+    if len(sys.argv) > 1:
+        selected_tests = list(filter(lambda t: t.__class__.__name__ in sys.argv[1:], TESTS))
+    else:
+        selected_tests = TESTS
+
+    assert len(selected_tests) <= len(TESTS)
+
     total_start_time = time.time()
-    for test in TESTS:
+    for test in selected_tests:
+        test_name = test.__class__.__name__
         total += 1
-        print(test.__class__.__name__, "...", end="", flush=True)
+        print(f"[{total}/{len(selected_tests)}]", test_name, "...", end="", flush=True)
         test_case_started = time.time()
         success = True
         post_info = None
@@ -59,7 +68,7 @@ Exception: {e}
             print("---------------------------------")
 
     total_test_time = time.time() - total_start_time
-    assert total == len(TESTS)
+    assert total == len(selected_tests)
     assert passed + failed == total
 
     print("=============")

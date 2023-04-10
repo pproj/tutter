@@ -1,6 +1,9 @@
 import random
 import string
+import threading
 import time
+
+import requests.exceptions
 
 from json_tree_validate import expect_json_tree, MagicExists, MagicAnyNumeric, MagicUnorderedList, MagicAnyOf
 from testcase import TestCaseBase
@@ -404,12 +407,12 @@ class PostFiltersLocalBasic(TestCaseBase):
 
         # limit checks
         for i in range(total_posts + 10):
-            r = self.request_and_expect_status("GET", f"/api/post?limit={i+1}", 200)
+            r = self.request_and_expect_status("GET", f"/api/post?limit={i + 1}", 200)
             assert len(r.json()) == min(i + 1, total_posts)
 
         # limit + ordering
         for i in range(total_posts + 10):
-            r = self.request_and_expect_status("GET", f"/api/post?limit={i+1}&order=asc", 200)
+            r = self.request_and_expect_status("GET", f"/api/post?limit={i + 1}&order=asc", 200)
             assert len(r.json()) == min(i + 1, total_posts)
             last_id = 0
             for post in r.json():
@@ -417,7 +420,7 @@ class PostFiltersLocalBasic(TestCaseBase):
                 last_id = post['id']
 
         for i in range(total_posts + 10):
-            r = self.request_and_expect_status("GET", f"/api/post?limit={i+1}&order=desc", 200)
+            r = self.request_and_expect_status("GET", f"/api/post?limit={i + 1}&order=desc", 200)
             assert len(r.json()) == min(i + 1, total_posts)
             last_id = 999
             for post in r.json():
@@ -425,3 +428,70 @@ class PostFiltersLocalBasic(TestCaseBase):
                 last_id = post['id']
 
         # TODO: offset
+
+
+class LongPollRace(TestCaseBase):
+    class LPReader(threading.Thread):
+        def __init__(self, testcase):
+            super().__init__()
+            self.responses = set()
+            self.errors = []
+            self.running = True
+            self.testcase: TestCaseBase = testcase
+            self._remaining_passes = 2
+
+        def run(self):
+            last = 0
+            while self._remaining_passes > 0:
+                if not self.running:
+                    self._remaining_passes -= 1
+
+                if random.random() > 0.5:
+                    time.sleep(random.random() * 0.01)
+
+                try:
+                    r = self.testcase.session.get("/api/poll?last=" + str(last), timeout=3)
+                except requests.exceptions.Timeout:
+                    continue
+
+                if r.status_code == 204:
+                    continue
+
+                if r.status_code == 200:
+                    for post in r.json():
+                        post_id = post['id']
+                        self.responses.add(post_id)
+                        if post_id > last:
+                            last = post_id
+                else:
+                    self.errors.append(r)
+
+    def run(self):
+        post = {
+            "author": "alma",
+            "text": "alma"
+        }
+
+        pollers = []
+        for i in range(10):
+            time.sleep(0.001)
+            rd = self.LPReader(self)
+            pollers.append(rd)
+            rd.start()
+
+        try:
+            for i in range(500):
+                if random.random() > 0.5:
+                    time.sleep(random.random() * 0.001)
+                self.request_and_expect_status("POST", "/api/post", 201, json=post)
+
+        finally:
+            for rd in pollers:
+                rd.running = False
+
+            for rd in pollers:
+                rd.join()
+
+            for rd in pollers:
+                assert len(rd.responses) == 500
+                assert len(rd.errors) == 0
