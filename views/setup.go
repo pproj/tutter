@@ -4,9 +4,28 @@ import (
 	"git.sch.bme.hu/pp23/tutter/db"
 	"git.sch.bme.hu/pp23/tutter/observer"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
-func RegisterEndpoints(routerGroup *gin.RouterGroup) error {
+// dbIdPoller is used to give subscribers that missed an event a second chance of catching it.
+// This is also useful when the application is running in multiple replicas and the shared sync thing does not work for some reason
+func dbIdPoller() {
+	for {
+		time.Sleep(time.Second * 30)
+		maxid, err := db.GetLastPostId()
+		if err != nil {
+			continue // ignore
+		}
+		if maxid > newPostObserver.LastId() {
+			err = newPostObserver.Notify(maxid)
+			if err != nil {
+				continue // ignore
+			}
+		}
+	}
+}
+
+func SetupEndpoints(routerGroup *gin.RouterGroup) error {
 
 	// First, setup observer for the long polling thing
 	id, err := db.GetLastPostId()
@@ -15,6 +34,7 @@ func RegisterEndpoints(routerGroup *gin.RouterGroup) error {
 	}
 	newPostObserver = observer.NewNewIdObserver(id)
 	routerGroup.GET("/poll", longPoll)
+	go dbIdPoller()
 
 	// Then the REST
 	routerGroup.POST("/post", createPost)

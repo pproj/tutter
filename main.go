@@ -52,7 +52,7 @@ func main() {
 
 	// Serve api
 	api := router.Group("/api")
-	err = views.RegisterEndpoints(api)
+	err = views.SetupEndpoints(api)
 	if err != nil {
 		panic(err)
 	}
