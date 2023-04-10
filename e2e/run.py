@@ -3,7 +3,8 @@ import time
 import traceback
 
 from testcases import CheckOpenAPIAvailability, CreateSinglePost, CreateSinglePostWithTags, CreatePostWithEdgeCaseTags, \
-    CreateHugeAmountOfPosts, CreateInvalidPosts, PostFiltersByAssociation, PostFiltersLocalBasic, LongPollRace
+    CreateHugeAmountOfPosts, CreateInvalidPosts, PostFiltersByAssociation, PostFiltersLocalBasic, LongPollRace, \
+    LongPollBasic
 
 TESTS = [
     CheckOpenAPIAvailability(),
@@ -14,7 +15,8 @@ TESTS = [
     PostFiltersByAssociation(),
     PostFiltersLocalBasic(),
     CreateHugeAmountOfPosts(),
-    LongPollRace()
+    LongPollRace(),
+    LongPollBasic()
 ]
 
 

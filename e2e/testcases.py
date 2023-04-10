@@ -495,3 +495,27 @@ class LongPollRace(TestCaseBase):
             for rd in pollers:
                 assert len(rd.responses) == 500
                 assert len(rd.errors) == 0
+
+
+class LongPollBasic(TestCaseBase):
+
+    def run(self):
+        polled_r: requests.Response | None = None
+
+        post = {
+            "author": "alma",
+            "text": "alma"
+        }
+
+        def long_wait():
+            nonlocal polled_r
+            polled_r = self.request_and_expect_status("GET", "/api/poll?last=0", 200)
+
+        t = threading.Thread(target=long_wait)
+        t.start()
+        time.sleep(1)
+
+        r = self.request_and_expect_status("POST", "/api/post", 201, json=post)
+
+        t.join()
+        expect_json_tree(r.json(), polled_r.json())
