@@ -2,7 +2,6 @@ package observer
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -36,14 +35,15 @@ func (o *NewIdObserver) Subscribe(ctx context.Context) (<-chan uint64, error) {
 	o.outputChanMutex.Lock()
 	o.outputChans[subscriberChan] = nil
 	o.outputChanMutex.Unlock()
-	go func() {
+
+	go func() { // Yes, this allocates an extra goroutine for each subscriber... but it won't be easy to wait on this many contexts
 		<-ctx.Done()
 		o.outputChanMutex.Lock()
 		delete(o.outputChans, subscriberChan)
 		o.outputChanMutex.Unlock()
 		close(subscriberChan)
-		fmt.Println("Channel cleaned up")
 	}()
+
 	return subscriberChan, nil
 }
 
