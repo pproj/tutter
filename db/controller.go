@@ -50,7 +50,7 @@ func GetPosts(filter *PostFilterParams) (*[]Post, error) {
 	return &posts, nil
 }
 
-func GetAllPostsAfterId(id uint) (*[]Post, error) {
+func GetAllPostsAfterId(id uint64) (*[]Post, error) {
 	var allPosts []Post
 	result := db.Preload("Author").Preload("Tags").Where("id > ?", id).Find(&allPosts)
 	if result.Error != nil {

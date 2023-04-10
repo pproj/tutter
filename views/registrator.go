@@ -8,6 +8,8 @@ func RegisterEndpoints(routerGroup *gin.RouterGroup) {
 	routerGroup.GET("/post", listPosts)
 	routerGroup.GET("/post/:id", getPost)
 
+	routerGroup.GET("/poll", longPoll)
+
 	routerGroup.GET("/tag", listTags)
 	routerGroup.GET("/tag/:tag", getTag)
 
