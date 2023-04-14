@@ -427,7 +427,71 @@ class PostFiltersLocalBasic(TestCaseBase):
                 assert post['id'] < last_id
                 last_id = post['id']
 
-        # TODO: offset
+        # offset
+        for i in range(total_posts + 10):
+            r = self.request_and_expect_status("GET", f"/api/post?offset={i}", 200)
+            assert len(r.json()) == max(0, total_posts - i)
+
+        # offset + ordering
+        for i in range(total_posts + 10):
+            r = self.request_and_expect_status("GET", f"/api/post?offset={i}&order=asc", 200)
+            next_id = i + 1
+            for post in r.json():
+                assert post['id'] == next_id
+                next_id += 1
+
+            assert len(r.json()) == max(0, total_posts - i)
+
+        for i in range(total_posts + 10):
+            r = self.request_and_expect_status("GET", f"/api/post?offset={i}&order=desc", 200)
+            next_id = total_posts - i
+            for post in r.json():
+                assert post['id'] == next_id
+                next_id -= 1
+
+            assert len(r.json()) == max(0, total_posts - i)
+
+        # limit + offset
+        for i in range(total_posts + 10):  # offset
+            for j in range(total_posts + 10):  # limit
+                r = self.request_and_expect_status("GET", f"/api/post?offset={i}&limit={j + 1}", 200)
+
+                desired_len = min(min(j + 1, total_posts), total_posts - i)
+                if i > total_posts:
+                    desired_len -= (total_posts - i)
+
+                assert len(r.json()) == desired_len
+
+        # limit + offset + ordering
+        for i in range(total_posts + 10):  # offset
+            for j in range(total_posts + 10):  # limit
+                r = self.request_and_expect_status("GET", f"/api/post?offset={i}&limit={j + 1}&order=asc", 200)
+
+                desired_len = min(min(j + 1, total_posts), total_posts - i)
+                if i > total_posts:
+                    desired_len -= (total_posts - i)
+
+                assert len(r.json()) == desired_len
+
+                next_id = i + 1
+                for post in r.json():
+                    assert post['id'] == next_id
+                    next_id += 1
+
+        for i in range(total_posts + 10):  # offset
+            for j in range(total_posts + 10):  # limit
+                r = self.request_and_expect_status("GET", f"/api/post?offset={i}&limit={j + 1}&order=desc", 200)
+
+                desired_len = min(min(j + 1, total_posts), total_posts - i)
+                if i > total_posts:
+                    desired_len -= (total_posts - i)
+
+                assert len(r.json()) == desired_len
+
+                next_id = total_posts - i
+                for post in r.json():
+                    assert post['id'] == next_id
+                    next_id -= 1
 
 
 class LongPollRace(TestCaseBase):
