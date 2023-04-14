@@ -364,10 +364,113 @@ class PostFiltersByAssociation(TestCaseBase):
         assert len(r.json()) == 0
 
 
-class PostFiltersLocalBasic(TestCaseBase):
+class FiltersLocalBasic(TestCaseBase):
+
+    def do_magic(self, resource: str, count: int):
+        # simple ordering
+        r = self.request_and_expect_status("GET", f"/api/{resource}?order=asc", 200)
+        last_id = 0
+        for post in r.json():
+            assert post['id'] > last_id
+            last_id = post['id']
+
+        r = self.request_and_expect_status("GET", f"/api/{resource}?order=desc", 200)
+        last_id = 999
+        for post in r.json():
+            assert post['id'] < last_id
+            last_id = post['id']
+
+        # limit checks
+        for i in range(count + 10):
+            r = self.request_and_expect_status("GET", f"/api/{resource}?limit={i + 1}", 200)
+            assert len(r.json()) == min(i + 1, count)
+
+        # limit + ordering
+        for i in range(count + 10):
+            r = self.request_and_expect_status("GET", f"/api/{resource}?limit={i + 1}&order=asc", 200)
+            assert len(r.json()) == min(i + 1, count)
+            last_id = 0
+            for post in r.json():
+                assert post['id'] > last_id
+                last_id = post['id']
+
+        for i in range(count + 10):
+            r = self.request_and_expect_status("GET", f"/api/{resource}?limit={i + 1}&order=desc", 200)
+            assert len(r.json()) == min(i + 1, count)
+            last_id = 999
+            for post in r.json():
+                assert post['id'] < last_id
+                last_id = post['id']
+
+        # offset
+        for i in range(count + 10):
+            r = self.request_and_expect_status("GET", f"/api/{resource}?offset={i}", 200)
+            assert len(r.json()) == max(0, count - i)
+
+        # offset + ordering
+        for i in range(count + 10):
+            r = self.request_and_expect_status("GET", f"/api/{resource}?offset={i}&order=asc", 200)
+            next_id = i + 1
+            for post in r.json():
+                assert post['id'] == next_id
+                next_id += 1
+
+            assert len(r.json()) == max(0, count - i)
+
+        for i in range(count + 10):
+            r = self.request_and_expect_status("GET", f"/api/{resource}?offset={i}&order=desc", 200)
+            next_id = count - i
+            for post in r.json():
+                assert post['id'] == next_id
+                next_id -= 1
+
+            assert len(r.json()) == max(0, count - i)
+
+        # limit + offset
+        for i in range(count + 10):  # offset
+            for j in range(count + 10):  # limit
+                r = self.request_and_expect_status("GET", f"/api/{resource}?offset={i}&limit={j + 1}", 200)
+
+                desired_len = min(min(j + 1, count), count - i)
+                if i > count:
+                    desired_len -= (count - i)
+
+                assert len(r.json()) == desired_len
+
+        # limit + offset + ordering
+        for i in range(count + 10):  # offset
+            for j in range(count + 10):  # limit
+                r = self.request_and_expect_status("GET", f"/api/{resource}?offset={i}&limit={j + 1}&order=asc", 200)
+
+                desired_len = min(min(j + 1, count), count - i)
+                if i > count:
+                    desired_len -= (count - i)
+
+                assert len(r.json()) == desired_len
+
+                next_id = i + 1
+                for post in r.json():
+                    assert post['id'] == next_id
+                    next_id += 1
+
+        for i in range(count + 10):  # offset
+            for j in range(count + 10):  # limit
+                r = self.request_and_expect_status("GET", f"/api/{resource}?offset={i}&limit={j + 1}&order=desc", 200)
+
+                desired_len = min(min(j + 1, count), count - i)
+                if i > count:
+                    desired_len -= (count - i)
+
+                assert len(r.json()) == desired_len
+
+                next_id = count - i
+                for post in r.json():
+                    assert post['id'] == next_id
+                    next_id -= 1
+
     def run(self):
-        authors = ['a', 'b']
-        tags = ['a', 'b', 'c', 'd', 'e']
+        authors = ['a', 'b', 'c']
+        tags = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
         total_posts = 0
         times = []
 
@@ -391,107 +494,61 @@ class PostFiltersLocalBasic(TestCaseBase):
         assert len(r.json()) == len(tags)
 
         # and now, run some queries
+        self.do_magic("post", total_posts)
+        self.do_magic("author", len(authors))
+        # TODO: tags
 
-        # simple ordering
-        r = self.request_and_expect_status("GET", "/api/post?order=asc", 200)
-        last_id = 0
-        for post in r.json():
-            assert post['id'] > last_id
-            last_id = post['id']
 
-        r = self.request_and_expect_status("GET", "/api/post?order=desc", 200)
-        last_id = 999
-        for post in r.json():
-            assert post['id'] < last_id
-            last_id = post['id']
+class FillFilter(TestCaseBase):
+    def run(self):
+        # Create some test posts
 
-        # limit checks
-        for i in range(total_posts + 10):
-            r = self.request_and_expect_status("GET", f"/api/post?limit={i + 1}", 200)
-            assert len(r.json()) == min(i + 1, total_posts)
+        authors = ['a', 'b', 'c']
+        tags = ['a', 'b', 'c', 'd', 'e', 'f']
+        total_posts = 0
+        posts_by_authors = {}.fromkeys(authors, 0)
+        posts_by_tags = {}.fromkeys(tags, 0)
 
-        # limit + ordering
-        for i in range(total_posts + 10):
-            r = self.request_and_expect_status("GET", f"/api/post?limit={i + 1}&order=asc", 200)
-            assert len(r.json()) == min(i + 1, total_posts)
-            last_id = 0
-            for post in r.json():
-                assert post['id'] > last_id
-                last_id = post['id']
+        for author in authors:
+            for i in range(len(tags) - 2):
+                total_posts += 1
+                posts_by_authors[author] += 1
+                posts_by_tags[tags[i]] += 1
+                posts_by_tags[tags[i + 1]] += 1
+                posts_by_tags[tags[i + 2]] += 1
+                post = {
+                    "author": author,
+                    "text": f"#{tags[i]} #{tags[i + 1]} #{tags[i + 2]}"
+                }
+                self.request_and_expect_status("POST", "/api/post", 201, json=post)
 
-        for i in range(total_posts + 10):
-            r = self.request_and_expect_status("GET", f"/api/post?limit={i + 1}&order=desc", 200)
-            assert len(r.json()) == min(i + 1, total_posts)
-            last_id = 999
-            for post in r.json():
-                assert post['id'] < last_id
-                last_id = post['id']
+        r = self.request_and_expect_status("GET", "/api/post", 200)
+        assert len(r.json()) == total_posts
 
-        # offset
-        for i in range(total_posts + 10):
-            r = self.request_and_expect_status("GET", f"/api/post?offset={i}", 200)
-            assert len(r.json()) == max(0, total_posts - i)
+        r = self.request_and_expect_status("GET", "/api/author", 200)
+        assert len(r.json()) == len(authors)
 
-        # offset + ordering
-        for i in range(total_posts + 10):
-            r = self.request_and_expect_status("GET", f"/api/post?offset={i}&order=asc", 200)
-            next_id = i + 1
-            for post in r.json():
-                assert post['id'] == next_id
-                next_id += 1
+        r = self.request_and_expect_status("GET", "/api/tag", 200)
+        assert len(r.json()) == len(tags)
 
-            assert len(r.json()) == max(0, total_posts - i)
+        # and now check if fill works or not
+        for t in tags:
+            r = self.request_and_expect_status("GET", f"/api/tag/{t}", 200)
+            r2 = self.request_and_expect_status("GET", f"/api/tag/{t}?fill=true", 200)
+            expect_json_tree(r.json(), r2.json())
+            r3 = self.request_and_expect_status("GET", f"/api/tag/{t}?fill=false", 200)
+            assert "posts" in r.json()
+            assert "posts" not in r3.json()
+            assert len(r.json()["posts"]) == posts_by_tags[t]
 
-        for i in range(total_posts + 10):
-            r = self.request_and_expect_status("GET", f"/api/post?offset={i}&order=desc", 200)
-            next_id = total_posts - i
-            for post in r.json():
-                assert post['id'] == next_id
-                next_id -= 1
-
-            assert len(r.json()) == max(0, total_posts - i)
-
-        # limit + offset
-        for i in range(total_posts + 10):  # offset
-            for j in range(total_posts + 10):  # limit
-                r = self.request_and_expect_status("GET", f"/api/post?offset={i}&limit={j + 1}", 200)
-
-                desired_len = min(min(j + 1, total_posts), total_posts - i)
-                if i > total_posts:
-                    desired_len -= (total_posts - i)
-
-                assert len(r.json()) == desired_len
-
-        # limit + offset + ordering
-        for i in range(total_posts + 10):  # offset
-            for j in range(total_posts + 10):  # limit
-                r = self.request_and_expect_status("GET", f"/api/post?offset={i}&limit={j + 1}&order=asc", 200)
-
-                desired_len = min(min(j + 1, total_posts), total_posts - i)
-                if i > total_posts:
-                    desired_len -= (total_posts - i)
-
-                assert len(r.json()) == desired_len
-
-                next_id = i + 1
-                for post in r.json():
-                    assert post['id'] == next_id
-                    next_id += 1
-
-        for i in range(total_posts + 10):  # offset
-            for j in range(total_posts + 10):  # limit
-                r = self.request_and_expect_status("GET", f"/api/post?offset={i}&limit={j + 1}&order=desc", 200)
-
-                desired_len = min(min(j + 1, total_posts), total_posts - i)
-                if i > total_posts:
-                    desired_len -= (total_posts - i)
-
-                assert len(r.json()) == desired_len
-
-                next_id = total_posts - i
-                for post in r.json():
-                    assert post['id'] == next_id
-                    next_id -= 1
+        for i, a in enumerate(authors):
+            r = self.request_and_expect_status("GET", f"/api/author/{i + 1}", 200)
+            r2 = self.request_and_expect_status("GET", f"/api/author/{i + 1}?fill=true", 200)
+            expect_json_tree(r.json(), r2.json())
+            r3 = self.request_and_expect_status("GET", f"/api/author/{i + 1}?fill=false", 200)
+            assert "posts" in r.json()
+            assert "posts" not in r3.json()
+            assert len(r.json()["posts"]) == posts_by_authors[a]
 
 
 class LongPollRace(TestCaseBase):
