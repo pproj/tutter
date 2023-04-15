@@ -501,7 +501,8 @@ class FiltersTopLevelBasic(TestCaseBase):
 
 class FiltersRelatedBasic(TestCaseBase):
 
-    def assert_asc(self, l:list, key):
+    @staticmethod
+    def assert_asc(l: list, key):
         if len(l) > 0:
             if key:
                 last_id = l[0][key]
@@ -516,7 +517,8 @@ class FiltersRelatedBasic(TestCaseBase):
                     assert p > last_id
                     last_id = p
 
-    def assert_desc(self, l:list, key):
+    @staticmethod
+    def assert_desc(l: list, key):
         if len(l) > 0:
             if key:
                 last_id = l[0][key]
@@ -565,13 +567,13 @@ class FiltersRelatedBasic(TestCaseBase):
         # offset + ordering
         for i in range(count + 10):
             r = self.request_and_expect_status("GET", f"/api/{resource_type}/{resource_id}?offset={i}&order=asc", 200)
-            self.assert_asc(r.json()['posts'], 'id')
             assert len(r.json()['posts']) == max(0, count - i)
+            self.assert_asc(r.json()['posts'], 'id')
 
         for i in range(count + 10):
             r = self.request_and_expect_status("GET", f"/api/{resource_type}/{resource_id}?offset={i}&order=desc", 200)
-            self.assert_desc(r.json()['posts'], 'id')
             assert len(r.json()['posts']) == max(0, count - i)
+            self.assert_desc(r.json()['posts'], 'id')
 
         # limit + offset
         for i in range(count + 10):  # offset
