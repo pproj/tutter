@@ -174,7 +174,7 @@ func (p fillFilterParams) Validate() error {
 
 	if p.Fill != nil && *p.Fill == false {
 		// if fill is disabled no params should be allowed
-		if p.Limit != nil && p.Offset != nil && p.Order != nil {
+		if p.Limit != nil || p.Offset != nil || p.Order != nil {
 			return fmt.Errorf("using any pagination params while fill is disabled makes no sense")
 		}
 	}

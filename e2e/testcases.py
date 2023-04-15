@@ -541,6 +541,13 @@ class FillFilter(TestCaseBase):
             assert "posts" not in r3.json()
             assert len(r.json()["posts"]) == posts_by_tags[t]
 
+            self.request_and_expect_status("GET", f"/api/tag/{t}?fill=false&order=asc", 400)
+            self.request_and_expect_status("GET", f"/api/tag/{t}?fill=false&order=desc", 400)
+            self.request_and_expect_status("GET", f"/api/tag/{t}?fill=false&offset=1", 400)
+            self.request_and_expect_status("GET", f"/api/tag/{t}?fill=false&limit=1", 400)
+            self.request_and_expect_status("GET", f"/api/tag/{t}?fill=false&limit=1&offset=1", 400)
+            self.request_and_expect_status("GET", f"/api/tag/{t}?fill=false&limit=1&offset=1&order=asc", 400)
+
         for i, a in enumerate(authors):
             r = self.request_and_expect_status("GET", f"/api/author/{i + 1}", 200)
             r2 = self.request_and_expect_status("GET", f"/api/author/{i + 1}?fill=true", 200)
@@ -549,6 +556,13 @@ class FillFilter(TestCaseBase):
             assert "posts" in r.json()
             assert "posts" not in r3.json()
             assert len(r.json()["posts"]) == posts_by_authors[a]
+
+            self.request_and_expect_status("GET", f"/api/author/{a}?fill=false&order=asc", 400)
+            self.request_and_expect_status("GET", f"/api/author/{a}?fill=false&order=desc", 400)
+            self.request_and_expect_status("GET", f"/api/author/{a}?fill=false&offset=1", 400)
+            self.request_and_expect_status("GET", f"/api/author/{a}?fill=false&limit=1", 400)
+            self.request_and_expect_status("GET", f"/api/author/{a}?fill=false&limit=1&offset=1", 400)
+            self.request_and_expect_status("GET", f"/api/author/{a}?fill=false&limit=1&offset=1&order=asc", 400)
 
 
 class LongPollRace(TestCaseBase):
