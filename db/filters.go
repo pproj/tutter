@@ -98,11 +98,11 @@ func (p PostFilterParams) Validate() error {
 	}
 
 	// This really grinds my gears...
-	if p.BeforeId != nil && p.AfterId != nil && *p.BeforeId < *p.AfterId {
+	if p.BeforeId != nil && p.AfterId != nil && *p.BeforeId <= *p.AfterId {
 		return fmt.Errorf("before must be after after")
 	}
 
-	if p.Before != nil && p.After != nil && p.Before.Before(*p.After) {
+	if p.Before != nil && p.After != nil && (p.Before.Before(*p.After) || p.Before.Equal(*p.After)) {
 		return fmt.Errorf("before must be after after")
 	}
 

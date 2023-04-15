@@ -3,8 +3,8 @@ import time
 import traceback
 
 from testcases import CheckOpenAPIAvailability, CreateSinglePost, CreateSinglePostWithTags, CreatePostWithEdgeCaseTags, \
-    CreateHugeAmountOfPosts, CreateInvalidPosts, PostFiltersByAssociation, FiltersTopLevelBasic, FiltersRelatedBasic, \
-    FillFilter, LongPollRace, LongPollBasic
+    CreateHugeAmountOfPosts, CreateInvalidPosts, InvalidFilters, PostFiltersByAssociation, OtherPostFilters, \
+    FiltersTopLevelBasic, FiltersRelatedBasic, FillFilter, LongPollRace, LongPollBasic
 
 TESTS = [
     CheckOpenAPIAvailability(),
@@ -12,7 +12,9 @@ TESTS = [
     CreateSinglePostWithTags(),
     CreatePostWithEdgeCaseTags(),
     CreateInvalidPosts(),
+    InvalidFilters(),
     PostFiltersByAssociation(),
+    OtherPostFilters(),
     FiltersTopLevelBasic(),
     FiltersRelatedBasic(),
     FillFilter(),

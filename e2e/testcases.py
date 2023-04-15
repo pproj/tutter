@@ -267,6 +267,47 @@ class CreateHugeAmountOfPosts(TestCaseBase):
             assert len(r.json()) == expected_number, "Could not retrieve all posts created"
 
 
+class InvalidFilters(TestCaseBase):
+    def run(self):
+        # commons
+        for res in ["post", "author", "tag"]:
+            self.request_and_expect_status("GET", f"/api/{res}?limit=0", 400)
+            self.request_and_expect_status("GET", f"/api/{res}?limit=-2", 400)
+            self.request_and_expect_status("GET", f"/api/{res}?order=asd", 400)
+            self.request_and_expect_status("GET", f"/api/{res}?order=asd&limit=0", 400)
+
+        # associated
+        for res in ["author", "tag"]:
+            # 1 can both be id and tag
+            self.request_and_expect_status("GET", f"/api/{res}/1?fill=asd", 400)
+            self.request_and_expect_status("GET", f"/api/{res}/1?fill=-12", 400)
+            self.request_and_expect_status("GET", f"/api/{res}/1?fill=false&limit=1", 400)
+            self.request_and_expect_status("GET", f"/api/{res}/1?fill=false&order=asc", 400)
+            self.request_and_expect_status("GET", f"/api/{res}/1?fill=false&offset=2", 400)
+
+        # post only
+
+        # before and before_id must not be used together
+        self.request_and_expect_status("GET", f"/api/post?before=2023-03-28T01:01:10%2b02:00&before_id=12", 400)
+
+        # after and after_id must not be used together
+        self.request_and_expect_status("GET", f"/api/post?after=2023-03-28T01:01:10%2b02:00&after_id=12", 400)
+
+        # before must be after after
+        self.request_and_expect_status("GET",
+                                       f"/api/post?after=2023-03-29T01:01:10%2b02:00&before=2023-03-28T01:01:10%2b02:00",
+                                       400)
+        self.request_and_expect_status("GET",
+                                       f"/api/post?after=2023-03-28T01:01:10%2b02:00&before=2023-03-28T01:01:10%2b02:00",
+                                       400)
+        self.request_and_expect_status("GET", f"/api/post?after_id=12&before_id=9", 400)
+        self.request_and_expect_status("GET", f"/api/post?after_id=9&before_id=9", 400)
+
+        # tag can not be empty string
+        self.request_and_expect_status("GET", f"/api/post?tag=", 400)
+        self.request_and_expect_status("GET", f"/api/post?tag=&tag=&tag=", 400)
+
+
 class PostFiltersByAssociation(TestCaseBase):
     def run(self):
         # Create some test posts
@@ -362,6 +403,41 @@ class PostFiltersByAssociation(TestCaseBase):
 
         r = self.request_and_expect_status("GET", f"/api/post?author_id=9999&author_id=9998&author_id=9997", 200)
         assert len(r.json()) == 0
+
+
+class OtherPostFilters(TestCaseBase):
+    def run(self):
+        # Create some test posts
+
+        authors = ['a', 'b']
+        tags = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+        total_posts = 0
+        posts_by_authors = {}.fromkeys(authors, 0)
+        posts_by_tags = {}.fromkeys(tags, 0)
+
+        for author in authors:
+            for i in range(len(tags) - 2):
+                total_posts += 1
+                posts_by_authors[author] += 1
+                posts_by_tags[tags[i]] += 1
+                posts_by_tags[tags[i + 1]] += 1
+                posts_by_tags[tags[i + 2]] += 1
+                post = {
+                    "author": author,
+                    "text": f"#{tags[i]} #{tags[i + 1]} #{tags[i + 2]}"
+                }
+                self.request_and_expect_status("POST", "/api/post", 201, json=post)
+
+        r = self.request_and_expect_status("GET", "/api/post", 200)
+        assert len(r.json()) == total_posts
+
+        r = self.request_and_expect_status("GET", "/api/author", 200)
+        assert len(r.json()) == len(authors)
+
+        r = self.request_and_expect_status("GET", "/api/tag", 200)
+        assert len(r.json()) == len(tags)
+
+        # And now something completly different
 
 
 class FiltersTopLevelBasic(TestCaseBase):
