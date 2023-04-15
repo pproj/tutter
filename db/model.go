@@ -44,17 +44,67 @@ func (p Post) MarshalJSON() ([]byte, error) {
 }
 
 type Tag struct {
-	ID        uint      `json:"-" gorm:"primarykey"`
-	FirstSeen time.Time `json:"first_seen" gorm:"default:now()"`
-	Tag       string    `json:"tag" gorm:"uniqueIndex, varchar(280)"`
+	ID        uint      `gorm:"primarykey"`
+	FirstSeen time.Time `gorm:"default:now()"`
+	Tag       string    `gorm:"uniqueIndex, varchar(280)"`
 
-	Posts []*Post `json:"posts,omitempty" gorm:"many2many:post_tags;"`
+	JSONIncludePosts bool    `json:"-" gorm:"-" sql:"-"` // Default false
+	Posts            []*Post `gorm:"many2many:post_tags;"`
+}
+
+func (t Tag) MarshalJSON() ([]byte, error) {
+	if t.JSONIncludePosts {
+		return json.Marshal(struct {
+			FirstSeen time.Time `json:"first_seen"`
+			Tag       string    `json:"tag"`
+			Posts     []*Post   `json:"posts"`
+		}{
+			FirstSeen: t.FirstSeen,
+			Tag:       t.Tag,
+			Posts:     t.Posts,
+		})
+	} else {
+		return json.Marshal(struct {
+			FirstSeen time.Time `json:"first_seen"`
+			Tag       string    `json:"tag"`
+		}{
+			FirstSeen: t.FirstSeen,
+			Tag:       t.Tag,
+		})
+	}
 }
 
 type Author struct {
-	ID        uint      `json:"id" gorm:"primarykey"`
-	FirstSeen time.Time `json:"first_seen" gorm:"default:now()"`
-	Name      string    `json:"name" gorm:"uniqueIndex;varchar(32)"`
+	ID        uint      `gorm:"primarykey"`
+	FirstSeen time.Time `gorm:"default:now()"`
+	Name      string    `gorm:"uniqueIndex;varchar(32)"`
 
-	Posts []*Post `json:"posts,omitempty" gorm:""`
+	JSONIncludePosts bool    `json:"-" gorm:"-" sql:"-"` // Default false
+	Posts            []*Post `gorm:""`
+}
+
+func (a Author) MarshalJSON() ([]byte, error) {
+	if a.JSONIncludePosts {
+		return json.Marshal(struct {
+			ID        uint      `json:"id"`
+			FirstSeen time.Time `json:"first_seen"`
+			Name      string    `json:"name"`
+			Posts     []*Post   `json:"posts"`
+		}{
+			ID:        a.ID,
+			FirstSeen: a.FirstSeen,
+			Name:      a.Name,
+			Posts:     a.Posts,
+		})
+	} else {
+		return json.Marshal(struct {
+			ID        uint      `json:"id"`
+			FirstSeen time.Time `json:"first_seen"`
+			Name      string    `json:"name"`
+		}{
+			ID:        a.ID,
+			FirstSeen: a.FirstSeen,
+			Name:      a.Name,
+		})
+	}
 }

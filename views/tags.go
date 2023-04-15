@@ -60,5 +60,7 @@ func getTag(ctx *gin.Context) {
 		return
 	}
 
+	tag.JSONIncludePosts = queryParams.IsFill()
+
 	ctx.JSON(200, tag)
 }

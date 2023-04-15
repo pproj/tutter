@@ -172,7 +172,7 @@ func (p PostFilterParams) Apply(chain *gorm.DB) *gorm.DB {
 
 func (p fillFilterParams) Validate() error {
 
-	if p.Fill != nil && *p.Fill == false {
+	if !p.IsFill() {
 		// if fill is disabled no params should be allowed
 		if p.Limit != nil || p.Offset != nil || p.Order != nil {
 			return fmt.Errorf("using any pagination params while fill is disabled makes no sense")
@@ -182,10 +182,14 @@ func (p fillFilterParams) Validate() error {
 	return p.CommonPaginationParams.Validate()
 }
 
+func (p fillFilterParams) IsFill() bool { // Default is true
+	return p.Fill == nil || *p.Fill == true
+}
+
 // TagFillFilterParams
 
 func (p TagFillFilterParams) Apply(chain *gorm.DB) *gorm.DB {
-	if p.Fill == nil || *p.Fill == true {
+	if p.IsFill() {
 		chain = chain.Preload("Posts", func(subChain *gorm.DB) *gorm.DB {
 			return p.CommonPaginationParams.Apply(subChain)
 		}).Preload("Posts.Author").Preload("Posts.Tags")
@@ -196,7 +200,7 @@ func (p TagFillFilterParams) Apply(chain *gorm.DB) *gorm.DB {
 // AuthorFillFilterParams
 
 func (p AuthorFillFilterParams) Apply(chain *gorm.DB) *gorm.DB {
-	if p.Fill == nil || *p.Fill == true {
+	if p.IsFill() {
 		chain = chain.Preload("Posts", func(subChain *gorm.DB) *gorm.DB {
 			return p.CommonPaginationParams.Apply(subChain)
 		}).Preload("Posts.Tags")

@@ -124,7 +124,7 @@ func listPosts(ctx *gin.Context) {
 
 }
 
-func getPost(ctx *gin.Context) {
+func getPost(ctx *gin.Context) { // This one does not take any query params
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 0)
 	if err != nil {
 		handleUserError(ctx, err)

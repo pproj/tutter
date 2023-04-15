@@ -60,6 +60,8 @@ func getAuthor(ctx *gin.Context) {
 		return
 	}
 
+	author.JSONIncludePosts = queryParams.IsFill()
+
 	ctx.JSON(200, author)
 
 }
