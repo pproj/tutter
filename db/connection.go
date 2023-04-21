@@ -1,6 +1,8 @@
 package db
 
 import (
+	"database/sql"
+	"fmt"
 	"gitlab.com/MikeTTh/env"
 	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
@@ -25,6 +27,29 @@ func Connect(lgr *zap.Logger) (err error) {
 		},
 		SkipDefaultTransaction: true, // Epic performance improvement
 	})
+
+	var sqlDB *sql.DB
+	sqlDB, err = db.DB()
+	if err != nil {
+		return
+	}
+
+	// hopefully this sets stuff globally
+	sqlDB.SetConnMaxLifetime(time.Minute * 15)
+	maxConn := env.Int("POSTGRESQL_MAX_CONNECTIONS", 50)
+	if maxConn <= 0 {
+		err = fmt.Errorf("max connections must be a positive number")
+		return
+	}
+	var maxIdle int
+	if maxConn < 10 {
+		maxIdle = maxConn
+	} else {
+		maxIdle = 10
+	}
+	sqlDB.SetMaxIdleConns(maxIdle)
+	sqlDB.SetMaxOpenConns(maxConn)
+
 	if err != nil {
 		return
 	}

@@ -1063,62 +1063,75 @@ class LongPollRace(TestCaseBase):
             self.running = True
             self.testcase: TestCaseBase = testcase
             self._remaining_passes = 2
+            self._last = 0
+
+        def loop(self):
+            timeout = random.random() * 5
+            try:
+                r = self.testcase.session.get("/api/poll?last=" + str(self._last), timeout=timeout)
+            except requests.exceptions.Timeout:
+                return  # new loop
+
+            if r.status_code == 204:
+                return  # new loop
+
+            elif r.status_code == 200:
+                last_before = self._last
+                assert len(r.json()) > 0
+                for post in r.json():
+                    post_id = post['id']
+                    assert post_id > last_before
+                    self.responses.add(post_id)
+                    if post_id > self._last:
+                        self._last = post_id
+                assert self._last > last_before
+
+            else:
+                raise Exception("Unexpected HTTP response: " + r.status_code)
 
         def run(self):
-            last = 0
             while self._remaining_passes > 0:
                 if not self.running:
                     self._remaining_passes -= 1
-
                 if random.random() > 0.5:
                     time.sleep(random.random() * 0.01)
 
                 try:
-                    r = self.testcase.session.get("/api/poll?last=" + str(last), timeout=3)
-                except requests.exceptions.Timeout:
-                    continue
-
-                if r.status_code == 204:
-                    continue
-
-                if r.status_code == 200:
-                    for post in r.json():
-                        post_id = post['id']
-                        self.responses.add(post_id)
-                        if post_id > last:
-                            last = post_id
-                else:
-                    self.errors.append(r)
+                    self.loop()
+                except Exception as e:
+                    self.errors.append(e)
 
     def run(self):
         post = {
             "author": "alma",
             "text": "alma"
         }
+        NUM_POLLERS = 100
+        NUM_POSTS = 2500
 
         pollers = []
-        for i in range(10):
+        for i in range(NUM_POLLERS):
             time.sleep(0.001)
-            rd = self.LPReader(self)
-            pollers.append(rd)
-            rd.start()
+            p = self.LPReader(self)
+            pollers.append(p)
+            p.start()
 
         try:
-            for i in range(500):
+            for i in range(NUM_POSTS):
                 if random.random() > 0.5:
                     time.sleep(random.random() * 0.001)
                 self.request_and_expect_status("POST", "/api/post", 201, json=post)
 
         finally:
-            for rd in pollers:
-                rd.running = False
+            for p in pollers:
+                p.running = False
 
-            for rd in pollers:
-                rd.join()
+            for p in pollers:
+                p.join()
 
-            for rd in pollers:
-                assert len(rd.responses) == 500
-                assert len(rd.errors) == 0
+            for p in pollers:
+                assert len(p.responses) == NUM_POSTS
+                assert len(p.errors) == 0
 
 
 class LongPollBasic(TestCaseBase):
