@@ -54,7 +54,7 @@ func goodLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 func main() {
 
 	// Setup logger
-	logger, err := zap.NewProduction()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic(err)
 	}

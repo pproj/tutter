@@ -1,8 +1,11 @@
 package db
 
 import (
+	"fmt"
 	"gorm.io/gorm"
 )
+
+var RandomGormError = fmt.Errorf("random gorm error")
 
 // POSTS
 
@@ -59,11 +62,18 @@ func GetAllPostsAfterId(id uint64) (*[]Post, error) {
 	return &allPosts, nil
 }
 
-func GetPostById(id uint) (*Post, error) {
+func GetPostById(id uint64) (*Post, error) {
 	var post Post
 	result := db.Preload("Author").Preload("Tags").First(&post, id)
 	if result.Error != nil {
 		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	if post.ID != id {
+		// I can't believe I have to do this...
+		return nil, RandomGormError
 	}
 	return &post, nil
 }
@@ -114,9 +124,16 @@ func GetAllAuthors() (*[]Author, error) {
 
 func GetAuthorById(id uint, filter *AuthorFillFilterParams) (*Author, error) {
 	var author Author
-	result := filter.Apply(db).Find(&author, id)
+	result := filter.Apply(db.Debug()).Find(&author, id)
 	if result.Error != nil {
 		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	if author.ID != id {
+		// I can't believe I have to do this...
+		return nil, RandomGormError
 	}
 	return &author, nil
 }
@@ -146,6 +163,13 @@ func GetTagByTag(tagStr string, filter *TagFillFilterParams) (*Tag, error) {
 	result := filter.Apply(db.Where("tag = ?", tagStr)).First(&tag)
 	if result.Error != nil {
 		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	if tag.Tag != tagStr {
+		// I can't believe I have to do this...
+		return nil, RandomGormError
 	}
 	return &tag, nil
 }
