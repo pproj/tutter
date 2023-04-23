@@ -124,7 +124,7 @@ func GetAllAuthors() (*[]Author, error) {
 
 func GetAuthorById(id uint, filter *AuthorFillFilterParams) (*Author, error) {
 	var author Author
-	result := filter.Apply(db.Debug()).Find(&author, id)
+	result := filter.Apply(db).Find(&author, id)
 	if result.Error != nil {
 		return nil, result.Error
 	}

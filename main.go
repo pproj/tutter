@@ -6,6 +6,7 @@ import (
 	"git.sch.bme.hu/pp23/tutter/views"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	"gitlab.com/MikeTTh/env"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"net/http"
@@ -53,8 +54,18 @@ func goodLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 
 func main() {
 
+	debugMode := env.Bool("DEBUG", false)
+
 	// Setup logger
-	logger, err := zap.NewDevelopment()
+	var err error
+	var logger *zap.Logger
+	if debugMode {
+		gin.SetMode(gin.DebugMode)
+		logger, err = zap.NewDevelopment()
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+		logger, err = zap.NewProduction()
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -71,7 +82,10 @@ func main() {
 	router := gin.New()
 
 	router.Use(goodLoggerMiddleware(logger))
-	router.Use(ginzap.RecoveryWithZap(logger, true))
+	if !debugMode {
+		// proper panic logs are better when debugging
+		router.Use(ginzap.RecoveryWithZap(logger, true))
+	}
 
 	// Serve SPA from dist/
 	router.StaticFS("/assets", http.Dir("dist/assets"))

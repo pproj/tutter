@@ -256,6 +256,7 @@ class InvalidGetsBasic(TestCaseBase):
         # dec 10 = oct 12
         self.request_and_expect_status("GET", f"api/author/012", 404)
 
+
 class CreateHugeAmountOfPosts(TestCaseBase):
     # This is kind of like stress-testing, but a lot lighter, only to test that the app wouldn't crash on light load
     # This test takes about 150sec on my machine

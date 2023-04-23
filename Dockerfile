@@ -22,7 +22,7 @@ COPY --from=backend-builder /src/main /app/main
 COPY ./apidoc /app/apidoc
 WORKDIR /app
 
-ENV GIN_MODE=release
+ENV DEBUG=false
 
 EXPOSE 8080
 
