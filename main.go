@@ -1,15 +1,55 @@
 package main
 
 import (
+	"fmt"
 	"git.sch.bme.hu/pp23/tutter/db"
 	"git.sch.bme.hu/pp23/tutter/views"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"net/http"
 	"strings"
 	"time"
 )
+
+func goodLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		start := time.Now()
+		// some evil middlewares modify this values
+		path := ctx.Request.URL.Path
+		query := ctx.Request.URL.RawQuery
+
+		fields := []zapcore.Field{
+			zap.String("method", ctx.Request.Method),
+			zap.String("path", path),
+			zap.String("query", query),
+			zap.String("ip", ctx.ClientIP()),
+			zap.String("user-agent", ctx.Request.UserAgent()),
+		}
+		subLogger := logger.With(fields...)
+
+		ctx.Set("l", subLogger)
+
+		ctx.Next() // <- execute next thing in the chain
+		end := time.Now()
+
+		latency := end.Sub(start)
+		completedRequestFields := []zapcore.Field{
+			zap.Int("status", ctx.Writer.Status()),
+			zap.Duration("latency", latency),
+		}
+		if len(ctx.Errors) > 0 {
+			// Append error field if this is an erroneous request.
+			for _, e := range ctx.Errors.Errors() {
+				subLogger.Error(e, completedRequestFields...)
+			}
+		}
+
+		subLogger.Info(fmt.Sprintf("%s %s served: %d", ctx.Request.Method, path, ctx.Writer.Status()), completedRequestFields...) // <- always print this
+
+	}
+}
 
 func main() {
 
@@ -30,7 +70,7 @@ func main() {
 	// Setup Gin
 	router := gin.New()
 
-	router.Use(ginzap.Ginzap(logger, time.RFC3339, true))
+	router.Use(goodLoggerMiddleware(logger))
 	router.Use(ginzap.RecoveryWithZap(logger, true))
 
 	// Serve SPA from dist/
@@ -52,7 +92,7 @@ func main() {
 
 	// Serve api
 	api := router.Group("/api")
-	err = views.SetupEndpoints(api)
+	err = views.SetupEndpoints(api, logger)
 	if err != nil {
 		panic(err)
 	}

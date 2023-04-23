@@ -4,6 +4,7 @@ import (
 	"context"
 	"git.sch.bme.hu/pp23/tutter/db"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"strconv"
 	"time"
 )
@@ -60,6 +61,12 @@ BigWait:
 
 	if posts == nil || len(*posts) == 0 {
 		// This is a highly unlikely situation, but I like to tell myself that I have prepared for everything
+		l, ok := ctx.Get("l")
+		if !ok {
+			panic("could not access logger")
+		}
+		logger := l.(*zap.Logger)
+		logger.Error("Queried for posts after a new post event, but query returned empty")
 		ctx.Status(204)
 	} else {
 		ctx.JSON(200, posts)

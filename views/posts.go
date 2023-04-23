@@ -5,6 +5,7 @@ import (
 	"git.sch.bme.hu/pp23/tutter/db"
 	"github.com/gin-gonic/gin"
 	"github.com/microcosm-cc/bluemonday"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"regexp"
 	"strconv"
@@ -92,7 +93,12 @@ func createPost(ctx *gin.Context) {
 
 	err = newPostObserver.Notify(newPost.ID)
 	if err != nil {
-		// TODO: log
+		l, ok := ctx.Get("l")
+		if !ok {
+			panic("could not access logger")
+		}
+		logger := l.(*zap.Logger)
+		logger.Error("Error while notifying observers", zap.Error(err))
 	}
 
 	ctx.JSON(201, newPost)
