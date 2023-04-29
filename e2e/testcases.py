@@ -156,6 +156,30 @@ class CreateInvalidPosts(TestCaseBase):
                 "author": "<img />",
                 "text": "<script></script>"
             },
+            {
+                "author": "a a",
+                "text": "alma"
+            },
+            {
+                "author": "a a a a a a",
+                "text": "alma"
+            },
+            {
+                "author": "#asdasd",
+                "text": "alma"
+            },
+            {
+                "author": "@asdasd",
+                "text": "alma"
+            },
+            {
+                "author": "A_A",
+                "text": "alma"
+            },
+            {
+                "author": "eü",
+                "text": "alma"
+            },
         ]
 
         expected_result = {
@@ -264,7 +288,7 @@ class CreateHugeAmountOfPosts(TestCaseBase):
         expected_number = 5000  # takes about a minute on my machine
         for i in range(expected_number):
             post = {
-                "author": ''.join(random.choice(string.ascii_letters) for _ in range(32)),
+                "author": ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(32)),
                 "text": ''.join(random.choice(string.ascii_letters) for _ in range(160))
             }
 

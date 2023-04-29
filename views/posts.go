@@ -13,16 +13,21 @@ import (
 )
 
 var (
+	authorRegex      *regexp.Regexp
 	tagRegex         *regexp.Regexp
 	blueMondayPolicy *bluemonday.Policy
 )
 
 func init() {
+	authorRegex = regexp.MustCompile(`^[a-z0-9_]+$`)
 	tagRegex = regexp.MustCompile(`#[a-zA-Z0-9]+`)
 	blueMondayPolicy = bluemonday.StrictPolicy()
 }
 
 func createPost(ctx *gin.Context) {
+
+	// First, parse json
+
 	type newPostParamsType struct {
 		Author string `json:"author" binding:"required,max=32"`
 		Text   string `json:"text" binding:"required,max=260"`
@@ -34,7 +39,29 @@ func createPost(ctx *gin.Context) {
 		return
 	}
 
-	match := tagRegex.FindAllStringSubmatch(newPostParams.Text, 260/3)
+	// Then sanitize all fields
+	sanitizedText := strings.TrimSpace(blueMondayPolicy.Sanitize(newPostParams.Text))
+	sanitizedAuthor := strings.TrimSpace(blueMondayPolicy.Sanitize(newPostParams.Author))
+
+	if len(sanitizedText) == 0 || len(sanitizedAuthor) == 0 {
+		handleUserError(ctx, fmt.Errorf("text or author empty"))
+		return
+	}
+
+	if len(sanitizedText) > 260 || len(sanitizedAuthor) > 32 {
+		// This should not happen either, but whatever
+		handleUserError(ctx, fmt.Errorf("text or author too long"))
+		return
+	}
+
+	if !authorRegex.MatchString(sanitizedAuthor) { // only lowercase and numbers
+		handleUserError(ctx, fmt.Errorf("author invalid"))
+		return
+	}
+
+	// Then extract tags from sanitized data
+
+	match := tagRegex.FindAllStringSubmatch(sanitizedText, 260/3)
 
 	tagSet := make(map[string]interface{})
 	for _, tagMatch := range match {
@@ -63,20 +90,7 @@ func createPost(ctx *gin.Context) {
 		})
 	}
 
-	sanitizedText := strings.TrimSpace(blueMondayPolicy.Sanitize(newPostParams.Text))
-	sanitizedAuthor := strings.TrimSpace(blueMondayPolicy.Sanitize(newPostParams.Author))
-
-	if len(sanitizedText) == 0 || len(sanitizedAuthor) == 0 {
-		handleUserError(ctx, fmt.Errorf("text or author empty"))
-		return
-	}
-
-	if len(sanitizedText) > 260 || len(sanitizedAuthor) > 32 {
-		// This should not happen either, but whatever
-		handleUserError(ctx, fmt.Errorf("text or author too long"))
-		return
-	}
-
+	// Compile new post object
 	newPost := db.Post{
 		Text: sanitizedText,
 		Author: &db.Author{
@@ -85,12 +99,14 @@ func createPost(ctx *gin.Context) {
 		Tags: tags,
 	}
 
+	// Submit to db
 	err = db.CreatePost(&newPost)
 	if err != nil {
 		handleInternalError(ctx, err)
 		return
 	}
 
+	// Broadcast to all long polling fellas
 	err = newPostObserver.Notify(newPost.ID)
 	if err != nil {
 		l, ok := ctx.Get("l")
@@ -101,6 +117,7 @@ func createPost(ctx *gin.Context) {
 		logger.Error("Error while notifying observers", zap.Error(err))
 	}
 
+	// return 201
 	ctx.JSON(201, newPost)
 
 }
