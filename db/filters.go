@@ -138,19 +138,19 @@ func (p PostFilterParams) Apply(chain *gorm.DB) *gorm.DB {
 	// and then these filters
 	var afterUsed bool
 	if p.AfterId != nil {
-		chain = chain.Where("id > ?", *p.AfterId)
+		chain = chain.Where("posts.id > ?", *p.AfterId)
 		afterUsed = true
 	} else if p.After != nil {
-		chain = chain.Where("created_at > ?", *p.After)
+		chain = chain.Where("posts.created_at > ?", *p.After)
 		afterUsed = true
 	}
 
 	var beforeUsed bool
 	if p.BeforeId != nil {
-		chain = chain.Where("id < ?", *p.BeforeId)
+		chain = chain.Where("posts.id < ?", *p.BeforeId)
 		beforeUsed = true
 	} else if p.Before != nil {
-		chain = chain.Where("created_at < ?", *p.Before)
+		chain = chain.Where("posts.created_at < ?", *p.Before)
 		beforeUsed = true
 	}
 
