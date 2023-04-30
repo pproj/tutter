@@ -149,6 +149,10 @@ class CreateInvalidPosts(TestCaseBase):
                 "text": "a" * 261
             },
             {
+                "author": "alma",
+                "text": "ű" * 261
+            },
+            {
                 "author": "a" * 33,
                 "text": "alma"
             },
@@ -192,6 +196,45 @@ class CreateInvalidPosts(TestCaseBase):
 
         r = self.request_and_expect_status("GET", "/api/post", 200)
         assert len(r.json()) == 0
+
+
+class CreatePostWithUnicodes(TestCaseBase):
+    def run(self):
+        cases = [
+            "á"*260,
+            "ü"*260,
+            "ű"*260,
+            "Á"*260,
+            "ó"*260,
+            "😀"*260,
+            "😎"*260,
+            "👌"*260,
+            "a"*259 + "á",
+            "a"*259 + "👌",
+        ]
+
+        for message in cases:
+            post = {
+                "author": "alma",
+                "text": message
+            }
+
+            expected_author = {
+                "id": 1,
+                "name": post['author'],
+                "first_seen": MagicExists()
+            }
+
+            expected_post = {
+                "id": MagicAnyNumeric(),
+                "created_at": MagicExists(),
+                "text": post['text'].strip(),
+                "author": expected_author,
+                "tags": []
+            }
+
+            r = self.request_and_expect_status("POST", "/api/post", 201, json=post)
+            expect_json_tree(r.json(), expected_post)
 
 
 class CreatePostWithEdgeCaseTags(TestCaseBase):
@@ -1234,7 +1277,7 @@ class PaginateByIdAndLimit(TestCaseBase):
                 assert loaded_posts == total_posts
 
         for i, author in enumerate(authors):
-            author_id = i+1
+            author_id = i + 1
             for order in [None, 'asc', 'desc']:
                 for limit in range(1, total_posts + 5):
                     last_id = None

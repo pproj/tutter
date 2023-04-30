@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 var (
@@ -29,8 +30,8 @@ func createPost(ctx *gin.Context) {
 	// First, parse json
 
 	type newPostParamsType struct {
-		Author string `json:"author" binding:"required,max=32"`
-		Text   string `json:"text" binding:"required,max=260"`
+		Author string `json:"author" binding:"required"` // length binding requirement removed, as it was not working
+		Text   string `json:"text" binding:"required"`
 	}
 	var newPostParams newPostParamsType
 	err := ctx.ShouldBindJSON(&newPostParams)
@@ -39,16 +40,24 @@ func createPost(ctx *gin.Context) {
 		return
 	}
 
+	if utf8.RuneCountInString(newPostParams.Text) > 260 || utf8.RuneCountInString(newPostParams.Author) > 32 {
+		// This is double-checked after sanitization
+		handleUserError(ctx, fmt.Errorf("text or author too long"))
+		return
+	}
+
 	// Then sanitize all fields
 	sanitizedText := strings.TrimSpace(blueMondayPolicy.Sanitize(newPostParams.Text))
 	sanitizedAuthor := strings.TrimSpace(blueMondayPolicy.Sanitize(newPostParams.Author))
 
-	if len(sanitizedText) == 0 || len(sanitizedAuthor) == 0 {
+	if utf8.RuneCountInString(sanitizedText) == 0 || utf8.RuneCountInString(sanitizedAuthor) == 0 || len(sanitizedText) == 0 || len(sanitizedAuthor) == 0 {
+		// rune count and len should both be zero if the other one is zero, as a zero length string can not contain any rune
+		// But I'm too stupid for unicode, so I make sure... if this really is unnecessary the compiler will optimize it out anyway
 		handleUserError(ctx, fmt.Errorf("text or author empty"))
 		return
 	}
 
-	if len(sanitizedText) > 260 || len(sanitizedAuthor) > 32 {
+	if utf8.RuneCountInString(sanitizedText) > 260 || utf8.RuneCountInString(sanitizedAuthor) > 32 {
 		// This should not happen either, but whatever
 		handleUserError(ctx, fmt.Errorf("text or author too long"))
 		return
@@ -73,7 +82,7 @@ func createPost(ctx *gin.Context) {
 		tagText = strings.TrimSpace(tagText)         // <- ... this...
 		tagText = strings.ToLower(tagText)
 
-		if len(tagText) == 0 || len(tagText) > 259 {
+		if len(tagText) == 0 || len(tagText) > 259 { // <- using len instead of rune count, as unicode characters are not allowed in tags
 			// ... and this should never happen... but you never know either
 			continue
 		}

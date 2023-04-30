@@ -2,16 +2,18 @@ import sys
 import time
 import traceback
 
-from testcases import CheckOpenAPIAvailability, CreateSinglePost, CreateSinglePostWithTags, CreatePostWithEdgeCaseTags, \
-    InvalidGetsBasic, CreateHugeAmountOfPosts, CreateInvalidPosts, InvalidFilters, PostFiltersByAssociation, \
-    OtherPostFilters, FiltersTopLevelBasic, FiltersRelatedBasic, FillFilter, PaginateByIdAndLimit, LongPollRace,\
-    LongPollBasic
+from testcases import CheckOpenAPIAvailability, CreateSinglePost, CreateSinglePostWithTags, CreatePostWithEdgeCaseTags,\
+    CreatePostWithUnicodes, InvalidGetsBasic, CreateHugeAmountOfPosts, CreateInvalidPosts, InvalidFilters, \
+    PostFiltersByAssociation, OtherPostFilters, FiltersTopLevelBasic, FiltersRelatedBasic, FillFilter,\
+    PaginateByIdAndLimit, LongPollRace, LongPollBasic
 
 TESTS = [
     CheckOpenAPIAvailability(),
     CreateSinglePost(),
     CreateSinglePostWithTags(),
     CreatePostWithEdgeCaseTags(),
+    CreatePostWithUnicodes(),
+    InvalidGetsBasic(),
     CreateInvalidPosts(),
     InvalidFilters(),
     PostFiltersByAssociation(),
@@ -20,7 +22,6 @@ TESTS = [
     FiltersRelatedBasic(),
     FillFilter(),
     PaginateByIdAndLimit(),
-    InvalidGetsBasic(),
     CreateHugeAmountOfPosts(),
     LongPollRace(),
     LongPollBasic()
