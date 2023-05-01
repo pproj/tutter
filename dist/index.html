@@ -76,6 +76,10 @@
             loadSomethingSomewhere("/api/tag", "tags", (field) => field.tag)
         }
 
+        function loadTrendingTags() {
+            loadSomethingSomewhere("/api/trending", "trendingTags", (field) => field)
+        }
+
         function onSubmit(clear) {
             const form = document.getElementById("form")
             const formData = new FormData(form);
@@ -207,13 +211,20 @@
 </div>
 
 <div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
+    <h2>Trending tags</h2>
+    <button onclick="loadTrendingTags()">Load</button>
+    <div id="trendingTags">
+    </div>
+</div>
+
+<div style="border: blue solid 1px; margin: 2em 1em; padding: 1em">
     <h2>Generate random posts</h2>
     Author: <input type="text" id="randomPostAuthor" placeholder="leave empty for random author">&nbsp;Count: <input type="number" id="randomPostCounter" value="10" min="1" step="1"/>&nbsp;<button onclick="onGenerateRandomPosts()">Generate</button>
     <div id="randomPostsResult">
     </div>
 </div>
 
-<div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
+<div style="border: blue solid 1px; margin: 2em 1em; padding: 1em">
     <h2>Scroll test</h2>
     Author: <input type="text" id="scrollTestAuthor" placeholder="leave empty for random author">&nbsp;Delay: <input type="number" id="scrollTestDelay" value="2000" min="200" step="1">ms&nbsp;<button onclick="onStartScrollTest()">Start</button>&nbsp;<button onclick="onStopScrollTest()">Stop</button>
     <div id="scrollTestResult">
