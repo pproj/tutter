@@ -76,7 +76,7 @@
             loadSomethingSomewhere("/api/tag", "tags", (field) => field.tag)
         }
 
-        function onSubmit() {
+        function onSubmit(clear) {
             const form = document.getElementById("form")
             const formData = new FormData(form);
             let object = {};
@@ -87,7 +87,9 @@
                 const resStatsHolder = document.getElementById("respStats")
                 resStatsHolder.innerHTML = "<b>Status:</b> " + response.status + " " + response.statusText
                 respHolder.innerHTML = JSON.stringify(respJson)
-                form.reset()
+                if (clear) {
+                    form.reset()
+                }
                 loadPosts()
             })
         }
@@ -118,6 +120,41 @@
 
         }
 
+        let scrollTestCounter = 0
+        let scrollTestInterval = null
+
+        function onStartScrollTest() {
+            if (scrollTestInterval !== null) {
+                return
+            }
+            const scrollTestResult = document.getElementById("scrollTestResult")
+            scrollTestResult.innerHTML = "started..."
+
+            const interval = document.getElementById("scrollTestDelay").value
+            scrollTestCounter = 0
+            const scrollTestAuthor = document.getElementById("scrollTestAuthor")
+            const presetAuthor = scrollTestAuthor.value || ""
+
+            scrollTestInterval = setInterval(function() {
+                scrollTestCounter++
+                let author = presetAuthor
+                if (author === "") {
+                    author = (Math.random() + 1).toString(36).substring(7); // funny one
+                    const text = "scroll " + scrollTestCounter
+                    createPost({author, text}).then(() => {
+                        const scrollTestResult = document.getElementById("scrollTestResult")
+                        scrollTestResult.innerHTML = "posted: " + scrollTestCounter
+                    })
+                }
+            }, interval)
+        }
+
+        function onStopScrollTest() {
+            clearInterval(scrollTestInterval)
+            scrollTestInterval = null
+            const scrollTestResult = document.getElementById("scrollTestResult")
+            scrollTestResult.innerHTML = "posted: " + scrollTestCounter + " stopped"
+        }
 
     </script>
 
@@ -131,11 +168,13 @@
 
 <div style="border: green solid 1px; margin: 2em 1em; padding: 1em">
     <h2>New post</h2>
-    <form onsubmit="onSubmit(); return false" id="form">
+    <form onsubmit="onSubmit(true); return false" id="form">
         Name: <input type="text" name="author" id="input_name"><br>
         Post: <textarea name="text" id="input_text"></textarea>
-        <input type="submit">
     </form>
+    <button onclick="onSubmit(true)">Submit</button>
+    <button onclick="onSubmit(false)">Submit & don't clear</button>
+
 
     <div style="border: red solid 1px; margin: 1em 0; padding: 1em">
         <h3>Response</h3>
@@ -171,6 +210,13 @@
     <h2>Generate random posts</h2>
     Author: <input type="text" id="randomPostAuthor" placeholder="leave empty for random author">&nbsp;Count: <input type="number" id="randomPostCounter" value="10" min="1" step="1"/>&nbsp;<button onclick="onGenerateRandomPosts()">Generate</button>
     <div id="randomPostsResult">
+    </div>
+</div>
+
+<div style="border: gray solid 1px; margin: 2em 1em; padding: 1em">
+    <h2>Scroll test</h2>
+    Author: <input type="text" id="scrollTestAuthor" placeholder="leave empty for random author">&nbsp;Delay: <input type="number" id="scrollTestDelay" value="2000" min="200" step="1">ms&nbsp;<button onclick="onStartScrollTest()">Start</button>&nbsp;<button onclick="onStopScrollTest()">Stop</button>
+    <div id="scrollTestResult">
     </div>
 </div>
 
