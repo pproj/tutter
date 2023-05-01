@@ -15,4 +15,4 @@ func handleUserError(ctx *gin.Context, err error) {
 	ctx.AbortWithStatusJSON(400, gin.H{"reason": err.Error()})
 }
 
-var newPostObserver *observer.NewIdObserver = nil
+var newPostObserver *observer.NewPostObserver = nil

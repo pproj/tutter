@@ -5,7 +5,7 @@ import traceback
 from testcases import CheckOpenAPIAvailability, CreateSinglePost, CreateSinglePostWithTags, CreatePostWithEdgeCaseTags,\
     CreatePostWithUnicodes, InvalidGetsBasic, CreateHugeAmountOfPosts, CreateInvalidPosts, InvalidFilters, \
     PostFiltersByAssociation, OtherPostFilters, FiltersTopLevelBasic, FiltersRelatedBasic, FillFilter,\
-    PaginateByIdAndLimit, LongPollRace, LongPollBasic, FilterAuthorByName
+    PaginateByIdAndLimit, LongPollRace, LongPollBasic, FilterAuthorByName, LongPollFiltered
 
 TESTS = [
     CheckOpenAPIAvailability(),
@@ -24,8 +24,9 @@ TESTS = [
     FilterAuthorByName(),
     PaginateByIdAndLimit(),
     CreateHugeAmountOfPosts(),
+    LongPollBasic(),
+    LongPollFiltered(),
     LongPollRace(),
-    LongPollBasic()
 ]
 
 

@@ -116,7 +116,7 @@ func createPost(ctx *gin.Context) {
 	}
 
 	// Broadcast to all long polling fellas
-	err = newPostObserver.Notify(newPost.ID)
+	err = newPostObserver.Notify(&newPost)
 	if err != nil {
 		l, ok := ctx.Get("l")
 		if !ok {

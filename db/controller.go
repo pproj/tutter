@@ -102,6 +102,19 @@ func GetLastPostId() (uint64, error) {
 
 }
 
+// GetLastPost returns the last post or error gorm.ErrRecordNotFound if no posts were published yet
+func GetLastPost() (*Post, error) {
+	var post Post
+	result := db.Order("id DESC").First(&post)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if post.ID == 0 { // with GORM anything can happen...  (post ids should start with 1)
+		return nil, gorm.ErrRecordNotFound
+	}
+	return &post, nil
+}
+
 // AUTHORS
 
 func GetAuthors(filter *AuthorFilterParams) (*[]Author, error) {

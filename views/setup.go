@@ -5,6 +5,7 @@ import (
 	"git.sch.bme.hu/pp23/tutter/observer"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -13,13 +14,20 @@ import (
 func dbIdPoller(logger *zap.Logger) {
 	for {
 		time.Sleep(time.Second * 30)
-		maxid, err := db.GetLastPostId()
+		lastPostInDB, err := db.GetLastPost()
 		if err != nil {
+
+			if err == gorm.ErrRecordNotFound {
+				continue // ignore without warning
+			}
+
 			logger.Warn("Error during periodic query for the last post id", zap.Error(err))
 			continue // ignore
 		}
-		if maxid > newPostObserver.LastId() { // <- this is not atomic, but post ids only expected to grow, so this should not be an issue
-			err = newPostObserver.Notify(maxid)
+
+		lastPostInMemory := newPostObserver.LastPost()
+		if lastPostInMemory == nil || lastPostInDB.ID > lastPostInMemory.ID { // <- this is not atomic, but post ids only expected to grow, so this should not be an issue
+			err = newPostObserver.Notify(lastPostInDB)
 			if err != nil {
 				logger.Warn("Error while notifying observers of the result of a periodic query", zap.Error(err))
 				continue // ignore
@@ -31,11 +39,13 @@ func dbIdPoller(logger *zap.Logger) {
 func SetupEndpoints(routerGroup *gin.RouterGroup, logger *zap.Logger) error {
 
 	// First, setup observer for the long polling thing
-	id, err := db.GetLastPostId()
-	if err != nil {
+	lastPost, err := db.GetLastPost()
+	if err == gorm.ErrRecordNotFound {
+		lastPost = nil
+	} else if err != nil {
 		return err
 	}
-	newPostObserver = observer.NewNewIdObserver(id)
+	newPostObserver = observer.NewNewPostObserver(lastPost)
 	routerGroup.GET("/poll", longPoll)
 	go dbIdPoller(logger)
 
