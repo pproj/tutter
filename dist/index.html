@@ -140,13 +140,13 @@
                 let author = presetAuthor
                 if (author === "") {
                     author = (Math.random() + 1).toString(36).substring(7); // funny one
-                    const text = "scroll " + scrollTestCounter
-                    createPost({author, text}).then(() => {
-                        const scrollTestResult = document.getElementById("scrollTestResult")
-                        scrollTestResult.innerHTML = "posted: " + scrollTestCounter
-                    })
                 }
-            }, interval)
+                const text = "scroll " + scrollTestCounter
+                createPost({author, text}).then(() => {
+                    const scrollTestResult = document.getElementById("scrollTestResult")
+                    scrollTestResult.innerHTML = "posted: " + scrollTestCounter
+                })
+            }, parseInt(interval))
         }
 
         function onStopScrollTest() {
