@@ -27,6 +27,11 @@ type PostFilterParams struct {
 	Authors  []uint     `form:"author_id"`
 }
 
+type AuthorFilterParams struct {
+	CommonPaginationParams
+	Names []string `form:"name"`
+}
+
 type fillFilterParams struct {
 	CommonPaginationParams
 	Fill *bool `form:"fill"`
@@ -166,6 +171,35 @@ func (p PostFilterParams) Apply(chain *gorm.DB) *gorm.DB {
 
 	// and then these
 	return p.CommonPaginationParams.Apply(chain)
+}
+
+// AuthorFilterParams
+
+func (a AuthorFilterParams) Validate() error {
+	// Call parent validations first
+	err := a.CommonPaginationParams.Validate()
+	if err != nil {
+		return err
+	}
+
+	// then custom stuff
+	if a.Names != nil && len(a.Names) > 0 {
+		for _, name := range a.Names {
+			if name == "" {
+				return fmt.Errorf("name can not be empty string")
+			}
+		}
+	}
+
+	return nil
+}
+
+func (a AuthorFilterParams) Apply(chain *gorm.DB) *gorm.DB {
+	if a.Names != nil && len(a.Names) > 0 { // first filter names
+		chain = chain.Where("name IN (?)", a.Names)
+	}
+	// then do pagination on filtered names
+	return a.CommonPaginationParams.Apply(chain)
 }
 
 // fillFilterParams

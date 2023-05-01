@@ -8,7 +8,7 @@ import (
 )
 
 func listAuthors(ctx *gin.Context) {
-	var queryParams db.CommonPaginationParams
+	var queryParams db.AuthorFilterParams
 	err := ctx.ShouldBindQuery(&queryParams)
 	if err != nil {
 		handleUserError(ctx, err)

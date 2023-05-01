@@ -104,7 +104,7 @@ func GetLastPostId() (uint64, error) {
 
 // AUTHORS
 
-func GetAuthors(filter *CommonPaginationParams) (*[]Author, error) {
+func GetAuthors(filter *AuthorFilterParams) (*[]Author, error) {
 	var authors []Author
 	result := filter.Apply(db).Find(&authors)
 	if result.Error != nil {
