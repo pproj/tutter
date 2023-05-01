@@ -56,6 +56,7 @@ func SetupEndpoints(routerGroup *gin.RouterGroup, logger *zap.Logger) error {
 
 	routerGroup.GET("/tag", listTags)
 	routerGroup.GET("/tag/:tag", getTag)
+	routerGroup.GET("/trending", getTrendingTags)
 
 	routerGroup.GET("/author", listAuthors)
 	routerGroup.GET("/author/:id", getAuthor)

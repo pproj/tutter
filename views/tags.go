@@ -64,3 +64,11 @@ func getTag(ctx *gin.Context) {
 
 	ctx.JSON(200, tag)
 }
+
+func getTrendingTags(ctx *gin.Context) {
+	// TODO: do magic
+
+	trendingTags := []string{"important", "tutter", "alma", "pp2023", "solved", "roflcopter", "cats", "cute"}
+
+	ctx.JSON(200, trendingTags)
+}
