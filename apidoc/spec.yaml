@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Tutter - OpenAPI 3.0
-  version: 0.1.0
+  version: 0.1.1
   description: |-
     
     Tutter is a simple social platform. Developed for PP'23.
@@ -15,15 +15,26 @@ info:
     There is no authentication of any kind to use Tutter. You may post using any name you want. 
     Registration is also not required to use Tutter. New user accounts created upon the first time they post something.
     
-    Similarly to posts, the maximum length of a username are 32 characters.
+    The maximum length of a username are 32 characters and it may only contain lowercase letters from the english alphabet, numbers and underscore (`_`).
+    
+    Example regex for valid username: `^[a-z0-9_]+$`
     
     ## Hashtags
     
     Hashtags are supported in posts. They are automatically parsed from the text of the posts.
     
-    A hashtag may only consist of lower case letters from the english alphabet and numbers. Hashtags are parsed up to the first non-allowed symbol (usually a whitespace) or the end of the post. (For convenience upper case letters are allowed during parsing, but they will be treated lowercase) 
+    A hashtag may only consist of lowercase letters from the english alphabet and numbers. Hashtags are parsed up to the first non-allowed symbol (usually a whitespace) or the end of the post. (For convenience upper case letters are allowed during parsing, but they will be treated lowercase) 
     
-    There is also and endpoint to fetch posts which contain a specific hashtag.
+    Example regex to search for hashtags: `#[a-zA-Z0-9]+`
+    
+    ## Long-polling
+    
+    The backend supports long-polling for new posts by the `/poll` endpoint. The server-side timeout for polling is about 2 minutes.
+    
+    The recommended way of using this enpoint is to first use any other endpoint to fetch some posts, then take the highest id from these posts, and use it as the `last` parameter of the `/poll` endpoint. Any posts returned by the endpoint should be added to the list of already recieved posts, then take the highest id of the returned posts and start over.
+    
+    It is always recommended to use the `last` parameter of the `/poll` endpoint. If not provided the backend will take the id of the last post, and return posts newer than that. If your client have missed that post (or posts before that), it won't recieve it at all.
+
 
 
 externalDocs:
@@ -76,6 +87,16 @@ paths:
         Although this endpoint allow listing of all posts in a single response it is highly unadvised for performance concerns. Please always use some filters or limits!
         
         All ordering applied by the query parameters are based on the post ID.
+        
+        
+        ## Filter evaluation order
+        1. `tag`, `author_id`
+        2. `after`, `after_id`, `before`, `before_id`
+        3. `order`
+        4. `limit`, `offset`
+        
+        This roughly means, that the backend interprets the first parameters first to form a result set, then the subsequent parameters can be used to further narrow down this result set. `limit` and `offset` are evaluated last, so that they can be used to paginate a large result set.
+
       parameters:
         - name: before_id
           in: query
@@ -85,8 +106,6 @@ paths:
             **Warning:** Using `before_id` without using `after` or `after_id` may change the sorting order to **descending**, to make sense when using `limit`. (This may be overridden by `order`)
             
             **Warning:** Can **not** be used together with `before`.
-            
-            **Note:** The plus sign must be escaped in the query string to `%2b` otherwise it would fail to parse.
             
             **Hint:** You may use this together with `after` or `after_id` to specify a range.
           required: false
@@ -102,8 +121,6 @@ paths:
             **Warning:** Using `after_id` without using `before` or `before_id` may change the sorting order to **ascending**, to make sense when using `limit`. (This may be overridden by `order`)
             
             **Warning:** Can **not** be used together with `after`.
-            
-            **Note:** The plus sign must be escaped in the query string to `%2b` otherwise it would fail to parse.
             
             **Hint:** You may use this together with `before` or `before_id` to specify a range.
           required: false
@@ -145,19 +162,6 @@ paths:
             type: string
             format: date-time
             example: "2023-03-26T18:18:19.372375+02:00"
-        - name: order
-          in: query
-          description: |
-            Change the ordering of the posts to either *ascending* or *descending* **before** applying limit.
-            
-            **Warning:** This will override the implicit ordering by `after`, `after_id`, `before` or `before_id`.
-            
-            **Hint:** You may use this together with `limit` to get the *last N posts*.
-          required: false
-          schema:
-            type: string
-            enum: [asc, desc]
-            example: "asc"
         - name: tag
           in: query
           description: |
@@ -187,14 +191,51 @@ paths:
             
             **Note:** Must be >0
             
+            **Hint:** May be useful in combination with `before`, `before_id`, `after` or `after_id`.
             
-            **Hint:** Useful in combination with `before`, `before_id`, `after` or `after_id`.
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
 
           required: false
           schema:
             type: integer
             format: uint
             example: 10
+        - name: offset
+          in: query
+          description: |
+            Offset the result set.
+            
+            **Note:** Must be >0
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: integer
+            format: uint64
+            example: 12
+        - name: order
+          in: query
+          description: |
+            Change the ordering of the posts to either *ascending* or *descending* **before** applying limit.
+            
+            **Warning:** This will override the implicit ordering by `after`, `after_id`, `before` or `before_id`.
+            
+            **Hint:** You may use this together with `limit` to get the *last N posts*.
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            example: "asc"
       responses:
         '200':
           description: "List of matching posts (or empty array for no match)"
@@ -204,6 +245,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PostWithAuthor'
+        '400':
+          description: "Invalid or conflicting query parameters provided"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserErrorResponse'
 
   /post/{postId}:
     get:
@@ -228,13 +275,142 @@ paths:
                 $ref: '#/components/schemas/PostWithAuthor'
         '404':
           description: "Post not found"
+
+        '400':
+          description: "Invalid postId provided"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserErrorResponse'
+
+  /poll:
+    get:
+      tags:
+        - post
+      summary: "Long polling for new posts"
+      description: |
+        This endpoint will block for max. 2 minutes. If any new post is posted during that it will return with a list of posts.
+      parameters:
+        - name: last
+          in: query
+          description: |
+            Numeric ID of the last Post the client recieved
+            
+            In other words, this endpoint will only return for posts that are posted after this id. (same as `after_id` parameter in `/post`)
+            
+            **Warning:** This is not a mandatory parameter, but it is highly recommended to use it, otherwise you may miss some posts.
+          required: false
+          schema:
+            type: integer
+            format: uint64
+            example: 10
+        - name: tag
+          in: query
+          description: |
+            Hashtag to filter for posts that contain this hashtag.
+            
+            In other words, wait for posts that contain this hashtag.
+            
+            **Warning:** Can **not** be used together with `author_id`.
+            
+            **Note:** Unlike the post filters, this parameter here can not be specified multiple times.
+
+          required: false
+          schema:
+            type: string
+            example: "example"
+        - name: author_id
+          in: query
+          description: |
+            Numeric ID of author to filter new posts only from this author.
+            
+            In other words, wait for posts that are from this author.
+            
+            **Warning:** Can **not** be used together with `tag`.
+            
+            **Note:** Unlike the post filters, this parameter here can not be specified multiple times.
+
+          required: false
+          schema:
+            type: integer
+            format: uint
+            example: 10
+
+      responses:
+        '200':
+          description: "New posts"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PostWithAuthor'
+
+        '204':
+          description: "Nothing was posted during the life of the long poll"
+
+        '400':
+          description: "Invalid or conflicting query parameters provided"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserErrorResponse'
+
+
   /tag:
     get:
       tags:
         - tag
       summary: "List hashtags"
-      description: "List all known hashtags WITHOUT their related posts"
-      parameters: []
+      description: |
+        List all known hashtags WITHOUT their related posts
+      parameters:
+        - name: limit
+          in: query
+          description: |
+            Limit the maximum number of results.
+            
+            **Note:** Must be >0
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: integer
+            format: uint
+            example: 10
+        - name: offset
+          in: query
+          description: |
+            Offset the result set.
+            
+            **Note:** Must be >0
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: integer
+            format: uint
+            example: 12
+        - name: order
+          in: query
+          description: |
+            Change the ordering of the results.
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            example: "asc"
       responses:
         '200':
           description: "List of known hashtags (or empty array if there is none)"
@@ -244,6 +420,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Tag'
+        '400':
+          description: "Invalid or conflicting query parameters provided"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserErrorResponse'
 
   /tag/{hashtag}:
     get:
@@ -259,6 +441,68 @@ paths:
           schema:
             type: string
             example: example
+        - name: fill
+          in: query
+          description: |
+            Populate the `posts` field with posts that contain this tag. All ordering parameters are evaluated over this list.
+
+          required: false
+          schema:
+            type: boolean
+            default: true
+            example: false
+        - name: limit
+          in: query
+          description: |
+            Limit the maximum number of results in the `posts` field.
+            
+            **Warning:** Works only if the `fill` parameter is `true` (which is the default).
+
+            **Note:** Must be >0
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: integer
+            format: uint
+            example: 10
+        - name: offset
+          in: query
+          description: |
+            Offset the result set in the `posts` field.
+
+            **Warning:** Works only if the `fill` parameter is `true` (which is the default).
+            
+            **Note:** Must be >0
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: integer
+            format: uint64
+            example: 12
+        - name: order
+          in: query
+          description: |
+            Change the ordering of the results in the `posts` field.
+
+            **Warning:** Works only if the `fill` parameter is `true` (which is the default).
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            example: "asc"
       responses:
         '200':
           description: "Hashtag info with matching related posts"
@@ -271,12 +515,97 @@ paths:
         '404':
           description: "Hashtag not found (probably never used before)"
 
+        '400':
+          description: "Invalid or conflicting query parameters, or hashtag provided"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserErrorResponse'
+
+  /trending:
+    get:
+      tags:
+        - tag
+      summary: "Get trending hashtags"
+      description: |
+        Simplified list of hashtags that are considered trending. This endpoint does not support paging. 
+        There is also no guarantee that the returned tags are actually existing (used in any posts).
+      parameters: []
+      responses:
+        '200':
+          description: "List of known hashtags (or empty array if there is none)"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: "string"
+                  example: "example"
+
   /author:
     get:
       tags:
         - author
       summary: "List authors"
       description: "Get a list of all authors WITHOUT their posts"
+      parameters:
+        - name: name
+          in: query
+          description: |
+            When specified, filter authors by their name.
+            May be specified multiple times, to match more than one author (union/OR).
+            
+            **Hint:** This might be useful to resolve author name to id. However this endpoint will return an empty list if there is no author with the given name (because this is a filter parameter afterall).
+          required: false
+          schema:
+            type: string
+            example: "marcsello"
+        - name: limit
+          in: query
+          description: |
+            Limit the maximum number of results.
+            
+            **Note:** Must be >0
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: integer
+            format: uint
+            example: 10
+        - name: offset
+          in: query
+          description: |
+            Offset the result set.
+            
+            **Note:** Must be >0
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: integer
+            format: uint
+            example: 12
+        - name: order
+          in: query
+          description: |
+            Change the ordering of the results.
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            example: "asc"
       responses:
         '200':
           description: "List of authors"
@@ -286,6 +615,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Author'
+        '400':
+          description: "Invalid or conflicting query parameters provided"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserErrorResponse'
 
   /author/{authorId}:
     get:
@@ -301,6 +636,68 @@ paths:
             type: integer
             format: uint
             example: 1
+        - name: fill
+          in: query
+          description: |
+            Populate the `posts` field with posts by this author. All ordering parameters are evaluated over this list.
+
+          required: false
+          schema:
+            type: boolean
+            default: true
+            example: false
+        - name: limit
+          in: query
+          description: |
+            Limit the maximum number of results in the `posts` field.
+            
+            **Warning:** Works only if the `fill` parameter is `true` (which is the default).
+
+            **Note:** Must be >0
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: integer
+            format: uint
+            example: 10
+        - name: offset
+          in: query
+          description: |
+            Offset the result set in the `posts` field.
+
+            **Warning:** Works only if the `fill` parameter is `true` (which is the default).
+            
+            **Note:** Must be >0
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: integer
+            format: uint64
+            example: 12
+        - name: order
+          in: query
+          description: |
+            Change the ordering of the results in the `posts` field.
+
+            **Warning:** Works only if the `fill` parameter is `true` (which is the default).
+            
+            **Note:** `order` is evaluated before `limit` and `offset`.
+            
+            **Note:** `limit` and `offset` are always evaluated last.
+
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            example: "asc"
       responses:
         '200':
           description: "Author info with their matching posts"
@@ -312,6 +709,13 @@ paths:
                   $ref: '#/components/schemas/AuthorWithPosts'
         '404':
           description: "No such author (haven't posted anything yet)"
+
+        '400':
+          description: "Invalid or conflicting query parameters, or authorId provided"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserErrorResponse'
 
 components:
   schemas:
