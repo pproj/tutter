@@ -84,7 +84,7 @@ paths:
         - post
       summary: "List posts"
       description: |
-        Although this endpoint allow listing of all posts in a single response it is highly unadvised for performance concerns. Please always use some filters or limits!
+        **Warning:** Although this endpoint allow listing of all posts in a single response it is highly unadvised for performance concerns. Please always use some filters or limits!
         
         All ordering applied by the query parameters are based on the post ID.
         
@@ -363,7 +363,11 @@ paths:
         - tag
       summary: "List hashtags"
       description: |
-        List all known hashtags WITHOUT their related posts
+        List all known hashtags WITHOUT their related posts.
+        
+        **Warning:** Although this endpoint allow listing of all hashtags in a single response it is highly unadvised for performance concerns. Please always use some query parameters to limit the number of results!
+        
+        Tags have an internal ID which is used for ordering and limiting. It is not exposed however...
       parameters:
         - name: limit
           in: query
@@ -547,7 +551,10 @@ paths:
       tags:
         - author
       summary: "List authors"
-      description: "Get a list of all authors WITHOUT their posts"
+      description: |
+        Get a list of all authors WITHOUT their posts
+        
+        **Warning:** Although this endpoint allow listing of all authors in a single response it is highly unadvised for performance concerns. Please always use some query parameters to limit the number of results!
       parameters:
         - name: name
           in: query
