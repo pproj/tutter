@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tutter
+  namespace: tutter
+  labels:
+    app: tutter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tutter
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: tutter
+    spec:
+      containers:
+        - name: tutter
+          image: marcsello/tutter:manual-1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: tutter-secrets
