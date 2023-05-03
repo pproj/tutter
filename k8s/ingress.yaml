@@ -16,7 +16,7 @@ spec:
     - host: tutter.k8s.marcsello.com
       http:
         paths:
-          - path: /api
+          - path: /
             pathType: Prefix
             backend:
               service:
