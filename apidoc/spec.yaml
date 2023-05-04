@@ -356,6 +356,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserErrorResponse'
 
+        '504':
+          description: "Marcsello forgot to configure the timeout on the reverse proxy"
+
 
   /tag:
     get:
