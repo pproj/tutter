@@ -7,7 +7,6 @@ stages:
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-  GIT_SUBMODULE_FORCE_HTTPS: "true"
 
 build:
   stage: build
