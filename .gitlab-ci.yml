@@ -26,6 +26,7 @@ test:
 podman:
   stage: release
   script:
+    - podman login --authfile $PODMAN_AUTH_FILE
     - rm -rf frontend
     - git clone git@git.sch.bme.hu:pp23/tutter-frontend.git frontend
     - podman build -t pproj/tutter .
