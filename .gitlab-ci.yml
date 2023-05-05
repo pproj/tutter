@@ -1,0 +1,39 @@
+# CI config for shell runner
+
+stages:
+  - build
+  - test
+  - release
+
+build:
+  stage: build
+  script:
+    - make
+
+golangci-lint:
+  stage: test
+  needs: []
+  allow_failure: true
+  script:
+    - golangci-lint run -v
+
+vet:
+  stage: test
+  needs: []
+  script:
+    - go fmt ./...
+    - go vet ./...
+
+test:
+  stage: test
+  needs: []
+  script:
+    - go test -race ./...
+
+podman:
+  stage: release
+  script:
+    - podman build -t pproj/tutter .
+    - podman push pproj/tutter
+  only:
+    - main
