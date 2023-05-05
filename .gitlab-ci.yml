@@ -5,9 +5,6 @@ stages:
   - test
   - release
 
-variables:
-  GIT_SUBMODULE_STRATEGY: recursive
-
 build:
   stage: build
   script:
@@ -29,6 +26,8 @@ test:
 podman:
   stage: release
   script:
+    - rm -rf frontend
+    - git clone git@git.sch.bme.hu:pp23/tutter-frontend.git frontend
     - podman build -t pproj/tutter .
     - podman push pproj/tutter
   only:
