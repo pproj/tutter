@@ -10,13 +10,6 @@ build:
   script:
     - make
 
-golangci-lint:
-  stage: test
-  needs: []
-  allow_failure: true
-  script:
-    - golangci-lint run -v
-
 vet:
   stage: test
   needs: []
@@ -36,4 +29,4 @@ podman:
     - podman build -t pproj/tutter .
     - podman push pproj/tutter
   only:
-    - main
+    - master
