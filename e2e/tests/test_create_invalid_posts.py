@@ -29,8 +29,12 @@ class CreateInvalidPosts(TestCaseBase):
                 "author": "a" * 33,
                 "text": "alma"
             },
-            {  # this is refused because it would evaluate to empty posts
+            {
                 "author": "<img />",
+                "text": "<script></script>"
+            },
+            {
+                "author": "asd",
                 "text": "<script></script>"
             },
             {
