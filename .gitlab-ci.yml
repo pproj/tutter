@@ -29,7 +29,7 @@ podman:
     - podman login --authfile $PODMAN_AUTH_FILE
     - rm -rf frontend
     - git clone git@git.sch.bme.hu:pp23/tutter-frontend.git frontend
-    - podman build -t pproj/tutter .
-    - podman push pproj/tutter
+    - podman build -t pproj/tutter:latest -t pproj/tutter:$CI_COMMIT_REF_NAME -t pproj/tutter:$CI_COMMIT_SHORT_SHA .
+    - podman push pproj/tutter:latest proj/tutter:$CI_COMMIT_REF_NAME pproj/tutter:$CI_COMMIT_SHORT_SHA
   only:
     - master
