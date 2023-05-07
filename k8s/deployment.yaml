@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: tutter
-          image: "pproj/tutter:da31abd9"
+          image: "pproj/tutter:b5f77a2c"
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
