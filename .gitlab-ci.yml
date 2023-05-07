@@ -32,8 +32,8 @@ podman:
     - podman build -t pproj/tutter:$CI_COMMIT_SHORT_SHA .
     - podman tag pproj/tutter:latest pproj/tutter:$CI_COMMIT_SHORT_SHA
     - podman tag pproj/tutter:$CI_COMMIT_REF_NAME pproj/tutter:$CI_COMMIT_SHORT_SHA
-    - podman push proj/tutter:latest
-    - podman push proj/tutter:$CI_COMMIT_REF_NAME
+    - podman push pproj/tutter:latest
+    - podman push pproj/tutter:$CI_COMMIT_REF_NAME
     - podman push pproj/tutter:$CI_COMMIT_SHORT_SHA
   only:
     - master
