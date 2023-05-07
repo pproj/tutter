@@ -30,8 +30,8 @@ podman:
     - rm -rf frontend
     - git clone git@git.sch.bme.hu:pp23/tutter-frontend.git frontend
     - podman build -t pproj/tutter:$CI_COMMIT_SHORT_SHA .
-    - podman tag pproj/tutter:latest pproj/tutter:$CI_COMMIT_SHORT_SHA
-    - podman tag pproj/tutter:$CI_COMMIT_REF_NAME pproj/tutter:$CI_COMMIT_SHORT_SHA
+    - podman tag pproj/tutter:$CI_COMMIT_SHORT_SHA pproj/tutter:latest
+    - podman tag pproj/tutter:$CI_COMMIT_SHORT_SHA pproj/tutter:$CI_COMMIT_REF_NAME
     - podman push pproj/tutter:latest
     - podman push pproj/tutter:$CI_COMMIT_REF_NAME
     - podman push pproj/tutter:$CI_COMMIT_SHORT_SHA
