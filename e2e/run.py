@@ -2,32 +2,46 @@ import sys
 import time
 import traceback
 
-from testcases import CheckOpenAPIAvailability, CreateSinglePost, CreateSinglePostWithTags, CreatePostWithEdgeCaseTags,\
-    CreatePostWithUnicodes, InvalidGetsBasic, CreateHugeAmountOfPosts, CreateInvalidPosts, InvalidFilters, \
-    PostFiltersByAssociation, OtherPostFilters, FiltersTopLevelBasic, FiltersRelatedBasic, FillFilter,\
-    PaginateByIdAndLimit, LongPollRace, LongPollBasic, FilterAuthorByName, LongPollFiltered
+from lib import TestCaseBase
+from inspect import isclass
+import pkgutil
+from importlib import import_module
 
-TESTS = [
-    CheckOpenAPIAvailability(),
-    CreateSinglePost(),
-    CreateSinglePostWithTags(),
-    CreatePostWithEdgeCaseTags(),
-    CreatePostWithUnicodes(),
-    InvalidGetsBasic(),
-    CreateInvalidPosts(),
-    InvalidFilters(),
-    PostFiltersByAssociation(),
-    OtherPostFilters(),
-    FiltersTopLevelBasic(),
-    FiltersRelatedBasic(),
-    FillFilter(),
-    FilterAuthorByName(),
-    PaginateByIdAndLimit(),
-    CreateHugeAmountOfPosts(),
-    LongPollBasic(),
-    LongPollFiltered(),
-    LongPollRace(),
-]
+
+def load_tests() -> list:
+    modules = []
+
+    for _, name, is_pkg in pkgutil.walk_packages(["tests"]):
+        if is_pkg:
+            continue
+
+        if not name.startswith('test_'):
+            continue
+
+        fullpath = 'tests.' + name
+
+        module = import_module(fullpath)
+
+        for attribute_name in dir(module):
+            attribute = getattr(module, attribute_name)
+
+            if isclass(attribute):
+
+                if not issubclass(attribute, TestCaseBase) or attribute is TestCaseBase:
+                    continue
+
+                # Add the class to this package's variables
+                globals()[attribute_name] = attribute
+
+                instance = attribute()  # create new instance
+
+                modules.append(
+                    instance
+                )
+
+    modules.sort(key=lambda t: t.priority, reverse=True)  # put higher priority first
+
+    return modules
 
 
 def main():
@@ -36,12 +50,13 @@ def main():
     passed = 0
     failed = 0
     total = 0
+    tests = load_tests()
     if len(sys.argv) > 1:
-        selected_tests = list(filter(lambda t: t.__class__.__name__ in sys.argv[1:], TESTS))
+        selected_tests = list(filter(lambda t: t.__class__.__name__ in sys.argv[1:], tests))
     else:
-        selected_tests = TESTS
+        selected_tests = tests
 
-    assert len(selected_tests) <= len(TESTS)
+    assert len(selected_tests) <= len(tests)
 
     total_start_time = time.time()
     for test in selected_tests:

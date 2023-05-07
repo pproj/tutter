@@ -15,9 +15,11 @@ type NewPostObserver struct {
 	// Using a mutex isn't really efficient, but it is what it is
 	outputChanMutex sync.Mutex // RWLock would not make much sense as notify is the only read, and it's called from a single gorutine only
 	outputChans     map[chan *db.Post]interface{}
+
+	allowDebug bool
 }
 
-func NewNewPostObserver(lastPost *db.Post) *NewPostObserver {
+func NewNewPostObserver(lastPost *db.Post, allowDebug bool) *NewPostObserver {
 	if lastPost == nil {
 		// TODO: log Warning!
 	}
@@ -25,6 +27,7 @@ func NewNewPostObserver(lastPost *db.Post) *NewPostObserver {
 	o := NewPostObserver{
 		inputChan:   make(chan *db.Post, 10),
 		outputChans: make(map[chan *db.Post]interface{}),
+		allowDebug:  allowDebug,
 	}
 	o.lastPost.Store(lastPost) // THIS MAY BE NIL!!
 	go o.run()
@@ -67,6 +70,13 @@ func (o *NewPostObserver) Notify(post *db.Post) error {
 // LastPost returns the last post or nil if there weren't any posts posted yet
 func (o *NewPostObserver) LastPost() *db.Post {
 	return o.lastPost.Load()
+}
+
+func (o *NewPostObserver) DebugCleanup() {
+	if !o.allowDebug {
+		return
+	}
+	o.lastPost.Store(nil)
 }
 
 func (o *NewPostObserver) run() {

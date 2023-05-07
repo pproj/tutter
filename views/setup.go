@@ -36,7 +36,7 @@ func dbIdPoller(logger *zap.Logger) {
 	}
 }
 
-func SetupEndpoints(routerGroup *gin.RouterGroup, logger *zap.Logger) error {
+func SetupEndpoints(routerGroup *gin.RouterGroup, logger *zap.Logger, debug bool, debugPin string) error {
 
 	// First, setup observer for the long polling thing
 	lastPost, err := db.GetLastPost()
@@ -45,7 +45,7 @@ func SetupEndpoints(routerGroup *gin.RouterGroup, logger *zap.Logger) error {
 	} else if err != nil {
 		return err
 	}
-	newPostObserver = observer.NewNewPostObserver(lastPost)
+	newPostObserver = observer.NewNewPostObserver(lastPost, debug)
 	routerGroup.GET("/poll", longPoll)
 	go dbIdPoller(logger)
 
@@ -60,6 +60,13 @@ func SetupEndpoints(routerGroup *gin.RouterGroup, logger *zap.Logger) error {
 
 	routerGroup.GET("/author", listAuthors)
 	routerGroup.GET("/author/:id", getAuthor)
+
+	if debug { // only register these in debug mode!!
+		logger.Warn("REGISTERING DEBUG ENDPOINTS! THIS IS SUPER UNSAFE AND NOT SOMETHING YOU WANT IN PRODUCTION!")
+		debugGroup := routerGroup.Group("/debug")
+		debugGroup.Use(createDebugAuth(debugPin))
+		debugGroup.POST("/cleanup", debugCleanup)
+	}
 
 	return nil
 }

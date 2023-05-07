@@ -16,6 +16,7 @@ class JsonTreeMissingKeyError(JsonTreeError):
     def __init__(self, key_hint: str, key):
         pass
 
+
 class JsonTreeNotMissingKeyError(JsonTreeError):
     def __init__(self, key_hint: str, key):
         pass

@@ -186,3 +186,12 @@ func GetTagByTag(tagStr string, filter *TagFillFilterParams) (*Tag, error) {
 	}
 	return &tag, nil
 }
+
+// Debug
+
+func CleanUpEverything() {
+	db.Exec("TRUNCATE TABLE post_tags RESTART IDENTITY CASCADE;")
+	db.Exec("TRUNCATE TABLE posts RESTART IDENTITY CASCADE;")
+	db.Exec("TRUNCATE TABLE authors RESTART IDENTITY CASCADE;")
+	db.Exec("TRUNCATE TABLE tags RESTART IDENTITY CASCADE;")
+}

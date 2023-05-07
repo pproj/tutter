@@ -5,6 +5,9 @@ import psycopg2
 import requests
 from requests_toolbelt.sessions import BaseUrlSession
 
+BASE_URL = os.environ.get("BASE_URL", "http://localhost:8080")
+DEBUG_PIN = os.environ["DEBUG_PIN"] # crash if undefined
+
 
 class UnexpectedHTTPStatus(Exception):
     def __init__(self, url: str, expected: int, got: int):
@@ -13,9 +16,10 @@ class UnexpectedHTTPStatus(Exception):
 
 class TestCaseBase(ABC):
 
+    priority = 0
+
     def __init__(self):
-        self.psql_dsn = os.environ.get("PSQL_DSN", "postgresql://root:secret@localhost/memes")
-        self.base_url = os.environ.get("BASE_URL", "http://localhost:8080")
+        self.base_url = BASE_URL
         self.session = BaseUrlSession(self.base_url)
 
     def __call__(self, *args, **kwargs):
@@ -56,11 +60,8 @@ class TestCaseBase(ABC):
         return r
 
     def reset_database(self):
-        conn = psycopg2.connect(self.psql_dsn)
-        cur = conn.cursor()
-        cur.execute('TRUNCATE TABLE post_tags RESTART IDENTITY CASCADE;')
-        cur.execute('TRUNCATE TABLE posts RESTART IDENTITY CASCADE;')
-        cur.execute('TRUNCATE TABLE authors RESTART IDENTITY CASCADE;')
-        cur.execute('TRUNCATE TABLE tags RESTART IDENTITY CASCADE;')
-        cur.close()
-        conn.commit()
+        headers = {
+            "X-Debug-Pin": DEBUG_PIN
+        }
+        r = self.session.post("/api/debug/cleanup", headers=headers)
+        r.raise_for_status()

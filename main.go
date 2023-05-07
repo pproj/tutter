@@ -9,10 +9,20 @@ import (
 	"gitlab.com/MikeTTh/env"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
 )
+
+func randStringRunes(n int) string {
+	const letterRunes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
 
 func goodLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -53,7 +63,7 @@ func goodLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 }
 
 func main() {
-
+	rand.Seed(time.Now().UnixNano())
 	debugMode := env.Bool("DEBUG", false)
 
 	// Setup logger
@@ -105,8 +115,18 @@ func main() {
 	})
 
 	// Serve api
+	debugPin := ""
+	if debugMode {
+		debugPin = env.StringOrDoSomething("DEBUG_PIN", func() string {
+			generatedDebugPin := randStringRunes(24)
+			logger.Info("DEBUG_PIN envvar undefined, random pin generated", zap.String("generatedDebugPin", generatedDebugPin))
+			return generatedDebugPin
+		})
+		logger.Warn("Debug mode enabled", zap.String("DEBUG_PIN", debugPin))
+	}
+
 	api := router.Group("/api")
-	err = views.SetupEndpoints(api, logger)
+	err = views.SetupEndpoints(api, logger, debugMode, debugPin)
 	if err != nil {
 		panic(err)
 	}
