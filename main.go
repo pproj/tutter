@@ -100,6 +100,7 @@ func main() {
 	// Serve SPA from dist/
 	router.StaticFS("/assets", http.Dir("dist/assets"))
 	router.StaticFile("/favicon.ico", "dist/favicon.ico")
+	router.StaticFile("/site.webmanifest", "dist/site.webmanifest")
 
 	router.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path // seems like this is already normalized
