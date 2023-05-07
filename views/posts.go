@@ -7,10 +7,16 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"html"
 	"regexp"
 	"strconv"
 	"strings"
 	"unicode/utf8"
+)
+
+const (
+	TEXT_MAX_LEN   = 260 // unicode runes
+	AUTHOR_MAX_LEN = 32  // unicode runes/bytes ... it should be the same
 )
 
 var (
@@ -40,37 +46,64 @@ func createPost(ctx *gin.Context) {
 		return
 	}
 
-	if utf8.RuneCountInString(newPostParams.Text) > 260 || utf8.RuneCountInString(newPostParams.Author) > 32 {
-		// This is double-checked after sanitization
+	// initial length check
+	if utf8.RuneCountInString(newPostParams.Text) > TEXT_MAX_LEN || utf8.RuneCountInString(newPostParams.Author) > AUTHOR_MAX_LEN {
 		handleUserError(ctx, fmt.Errorf("text or author too long"))
 		return
 	}
 
-	// Then sanitize all fields
-	sanitizedText := strings.TrimSpace(blueMondayPolicy.Sanitize(newPostParams.Text))
-	sanitizedAuthor := strings.TrimSpace(blueMondayPolicy.Sanitize(newPostParams.Author))
+	// Then sanitize and check text
+	sanitizedText := strings.TrimSpace(
+		html.UnescapeString( // <- This is another ugly hack* https://github.com/microcosm-cc/bluemonday/issues/39
+			blueMondayPolicy.Sanitize(
+				newPostParams.Text,
+			),
+		),
+	)
 
-	if utf8.RuneCountInString(sanitizedText) == 0 || utf8.RuneCountInString(sanitizedAuthor) == 0 || len(sanitizedText) == 0 || len(sanitizedAuthor) == 0 {
+	/*
+		* Okay, so the hack above might bite later, but we really need our API to not return escaped html data.
+		The official frontend and cli handles these strings properly already, and our API may be consumer by third party software which is important to us
+		So we take the risk here instead...
+	*/
+
+	if utf8.RuneCountInString(sanitizedText) == 0 || len(sanitizedText) == 0 {
 		// rune count and len should both be zero if the other one is zero, as a zero length string can not contain any rune
 		// But I'm too stupid for unicode, so I make sure... if this really is unnecessary the compiler will optimize it out anyway
-		handleUserError(ctx, fmt.Errorf("text or author empty"))
+		handleUserError(ctx, fmt.Errorf("text empty"))
 		return
 	}
 
-	if utf8.RuneCountInString(sanitizedText) > 260 || utf8.RuneCountInString(sanitizedAuthor) > 32 {
+	if utf8.RuneCountInString(sanitizedText) > TEXT_MAX_LEN {
 		// This should not happen either, but whatever
-		handleUserError(ctx, fmt.Errorf("text or author too long"))
+		handleUserError(ctx, fmt.Errorf("text too long"))
 		return
 	}
 
-	if !authorRegex.MatchString(sanitizedAuthor) { // only lowercase and numbers
+	// then validate author
+
+	if len(newPostParams.Author) == 0 {
+		handleUserError(ctx, fmt.Errorf("author empty"))
+		return
+	}
+
+	if len(newPostParams.Author) > AUTHOR_MAX_LEN {
+		handleUserError(ctx, fmt.Errorf("author too long"))
+		return
+	}
+
+	sanitizedAuthor := strings.TrimSpace(blueMondayPolicy.Sanitize(newPostParams.Author))
+
+	if (!authorRegex.MatchString(sanitizedAuthor)) || // only lowercase and numbers
+		sanitizedAuthor != newPostParams.Author ||
+		len(newPostParams.Author) != utf8.RuneCountInString(newPostParams.Author) {
 		handleUserError(ctx, fmt.Errorf("author invalid"))
 		return
 	}
 
 	// Then extract tags from sanitized data
 
-	match := tagRegex.FindAllStringSubmatch(sanitizedText, 260/3)
+	match := tagRegex.FindAllStringSubmatch(sanitizedText, TEXT_MAX_LEN/3)
 
 	tagSet := make(map[string]interface{})
 	for _, tagMatch := range match {
@@ -82,7 +115,7 @@ func createPost(ctx *gin.Context) {
 		tagText = strings.TrimSpace(tagText)         // <- ... this...
 		tagText = strings.ToLower(tagText)
 
-		if len(tagText) == 0 || len(tagText) > 259 { // <- using len instead of rune count, as unicode characters are not allowed in tags
+		if len(tagText) == 0 || len(tagText) > (TEXT_MAX_LEN-1) { // <- using len instead of rune count, as unicode characters are not allowed in tags
 			// ... and this should never happen... but you never know either
 			continue
 		}
@@ -103,7 +136,7 @@ func createPost(ctx *gin.Context) {
 	newPost := db.Post{
 		Text: sanitizedText,
 		Author: &db.Author{
-			Name: sanitizedAuthor,
+			Name: newPostParams.Author, // we already validated that author name must match the sanitized author name, otherwise we would refuse posting
 		},
 		Tags: tags,
 	}
