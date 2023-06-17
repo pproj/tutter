@@ -66,6 +66,8 @@ func SetupEndpoints(routerGroup *gin.RouterGroup, logger *zap.Logger, debug bool
 		debugGroup := routerGroup.Group("/debug")
 		debugGroup.Use(createDebugAuth(debugPin))
 		debugGroup.POST("/cleanup", debugCleanup)
+		debugGroup.PUT("/setTrending/:tag", debugSetTrending)
+		debugGroup.DELETE("/setTrending/:tag", debugSetTrending)
 	}
 
 	return nil

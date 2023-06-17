@@ -46,7 +46,8 @@ func (p Post) MarshalJSON() ([]byte, error) {
 type Tag struct {
 	ID        uint      `gorm:"primarykey"`
 	FirstSeen time.Time `gorm:"default:now()"`
-	Tag       string    `gorm:"uniqueIndex, varchar(280)"`
+	Tag       string    `gorm:"not null; uniqueIndex, varchar(280)"`
+	Trending  bool      `json:"-" gorm:"not null; default:false"`
 
 	JSONIncludePosts bool    `json:"-" gorm:"-" sql:"-"` // Default false
 	Posts            []*Post `gorm:"many2many:post_tags;"`

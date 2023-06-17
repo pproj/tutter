@@ -187,6 +187,15 @@ func GetTagByTag(tagStr string, filter *TagFillFilterParams) (*Tag, error) {
 	return &tag, nil
 }
 
+func GetTrendingTags() (*[]Tag, error) {
+	var tags []Tag
+	result := db.Where("trending = true").Find(&tags)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &tags, nil
+}
+
 // Debug
 
 func CleanUpEverything() {
@@ -194,4 +203,9 @@ func CleanUpEverything() {
 	db.Exec("TRUNCATE TABLE posts RESTART IDENTITY CASCADE;")
 	db.Exec("TRUNCATE TABLE authors RESTART IDENTITY CASCADE;")
 	db.Exec("TRUNCATE TABLE tags RESTART IDENTITY CASCADE;")
+}
+
+func SetTrendingTag(tag string, trending bool) error {
+	result := db.Model(&Tag{}).Where("tag = ?", tag).Update("trending", trending)
+	return result.Error
 }

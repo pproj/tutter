@@ -66,9 +66,17 @@ func getTag(ctx *gin.Context) {
 }
 
 func getTrendingTags(ctx *gin.Context) {
-	// TODO: do magic
+	tags, err := db.GetTrendingTags()
 
-	trendingTags := []string{"important", "tutter", "alma", "pp2023", "solved", "roflcopter", "cats", "cute"}
+	if err != nil {
+		handleInternalError(ctx, err)
+		return
+	}
+
+	trendingTags := make([]string, len(*tags))
+	for idx, tag := range *tags {
+		trendingTags[idx] = tag.Tag
+	}
 
 	ctx.JSON(200, trendingTags)
 }

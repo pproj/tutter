@@ -1,12 +1,11 @@
 import os
 from abc import ABC, abstractmethod
 
-import psycopg2
 import requests
 from requests_toolbelt.sessions import BaseUrlSession
 
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8080")
-DEBUG_PIN = os.environ["DEBUG_PIN"] # crash if undefined
+DEBUG_PIN = os.environ["DEBUG_PIN"]  # crash if undefined
 
 
 class UnexpectedHTTPStatus(Exception):
@@ -15,7 +14,6 @@ class UnexpectedHTTPStatus(Exception):
 
 
 class TestCaseBase(ABC):
-
     priority = 0
 
     def __init__(self):
@@ -64,4 +62,15 @@ class TestCaseBase(ABC):
             "X-Debug-Pin": DEBUG_PIN
         }
         r = self.session.post("/api/debug/cleanup", headers=headers)
+        r.raise_for_status()
+
+    def set_trending_tag(self, tag: str, trending: bool):
+        headers = {
+            "X-Debug-Pin": DEBUG_PIN
+        }
+        method = "DELETE"
+        if trending:
+            method = "PUT"
+
+        r = self.session.request(method, f"/api/debug/setTrending/{tag}", headers=headers)
         r.raise_for_status()
