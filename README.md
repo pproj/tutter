@@ -30,6 +30,7 @@ Tutter can be configured using the following env-vars:
 | `POSTGRESQL_MAX_CONNECTIONS` | `50`                              | Max connection limit to the Postgresql database (psql allow only 100 by default, going above this will result in 500 errors) |
 | `DEBUG`                      | `false`                           | Enable Debug logging and some debug features (registers undocumented `/debug` endpoints)                                     |
 | `DEBUG_PIN`                  | [random generated]                | Debug pin used to protect debug endpoints when DEBUG is true                                                                 |
+| `METRICS_BEARER`             | ""                                | Bearer token used by Prometheus when querying for metrics                                                                    |
 
 ## API
 
@@ -44,7 +45,7 @@ For Swagger UI the `/api` endpoint while running Tutter.
 Tutter comes with a simple hacky e2e test suite written in Python.
 It basically just does a bunch of api requests towards Tutter to see if everything works correctly. If not the tests
 fail, and you might be able to figure out the reason.
-The test suite uses Tutter's debug endpoints to clean up the database between test runs. 
+The test suite uses Tutter's debug endpoints to clean up the database between test runs.
 This operation requires a debug pin that is the same on the backend side.
 
 You may configure the e2e suite with the following envvars:

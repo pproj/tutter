@@ -6,6 +6,7 @@ import (
 	"git.sch.bme.hu/pp23/tutter/views"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gitlab.com/MikeTTh/env"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -58,6 +59,48 @@ func goodLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
 		}
 
 		subLogger.Info(fmt.Sprintf("%s %s served: %d", ctx.Request.Method, path, ctx.Writer.Status()), completedRequestFields...) // <- always print this
+
+	}
+}
+
+func validateAuthHeader(ctx *gin.Context, type_, key string) bool {
+	authHeader := ctx.GetHeader("Authorization")
+
+	if authHeader == "" {
+		return false
+	}
+
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 {
+		return false
+	}
+
+	if parts[0] != type_ {
+		return false
+	}
+
+	if parts[1] != key {
+		return false
+	}
+
+	return true
+}
+
+func createBearerAuth(token string) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+
+		if token == "" { // I'll leave this optional
+			ctx.Next()
+			return
+		}
+
+		if validateAuthHeader(ctx, "Bearer", token) {
+			ctx.Next()
+		} else {
+			ctx.Status(http.StatusUnauthorized)
+			ctx.Abort()
+			return
+		}
 
 	}
 }
@@ -135,6 +178,13 @@ func main() {
 	// Add API documentation... it may be ugly, but it works well.
 	api.StaticFile("/", "apidoc/apidoc.html")
 	api.StaticFile("/spec.yaml", "apidoc/spec.yaml")
+
+	// Add Prometheus metrics endpoint
+	router.GET(
+		"/metrics",
+		createBearerAuth(env.String("METRICS_BEARER", "")),
+		gin.WrapH(promhttp.Handler()),
+	)
 
 	// Listen and serve on 0.0.0.0:8080
 	err = router.Run(":8080")

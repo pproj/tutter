@@ -115,6 +115,15 @@ func GetLastPost() (*Post, error) {
 	return &post, nil
 }
 
+func GetPostCount() (int64, error) {
+	var count int64
+	result := db.Model(&Post{}).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}
+
 // AUTHORS
 
 func GetAuthors(filter *AuthorFilterParams) (*[]Author, error) {
@@ -151,6 +160,15 @@ func GetAuthorById(id uint, filter *AuthorFillFilterParams) (*Author, error) {
 	return &author, nil
 }
 
+func GetAuthorCount() (int64, error) {
+	var count int64
+	result := db.Model(&Author{}).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
+}
+
 // TAGS
 
 func GetTags(filter *CommonPaginationParams) (*[]Tag, error) {
@@ -169,6 +187,15 @@ func GetAllTags() (*[]Tag, error) {
 		return nil, result.Error
 	}
 	return &tags, nil
+}
+
+func GetTagCount() (int64, error) {
+	var count int64
+	result := db.Model(&Tag{}).Count(&count)
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return count, nil
 }
 
 func GetTagByTag(tagStr string, filter *TagFillFilterParams) (*Tag, error) {
