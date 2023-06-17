@@ -143,6 +143,10 @@ BigWait:
 				// Connection closed
 				// Since the context's close is deferred, the context will be canceled
 				return
+			case <-ctx.Request.Context().Done():
+				// Connection closed
+				// sometimes Gin let us know it this way
+				return
 			}
 		} // end of SmallWait
 
