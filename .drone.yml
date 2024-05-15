@@ -1,0 +1,45 @@
+kind: pipeline
+type: docker
+name: build
+
+steps:
+  - name: hadolint
+    image: hadolint/hadolint:latest-debian
+    commands:
+      - hadolint --version
+      - hadolint --verbose --failure-threshold warning Dockerfile
+
+  - name: gosec
+    image: securego/gosec
+    commands:
+      - gosec ./...
+
+  - name: go_test
+    image: golang:1.22.3
+    commands:
+      - go test -v ./...
+
+  - name: kaniko
+    image: plugins/kaniko
+    settings:
+      username:
+        from_secret: DOCKER_USERNAME
+      password:
+        from_secret: DOCKER_PASSWORD
+      repo: pproj/tutter
+      tags:
+        - latest
+        - ${DRONE_BUILD_NUMBER}
+    when:
+      branch:
+        - main
+
+  - name: telegram
+    image: appleboy/drone-telegram
+    settings:
+      token:
+        from_secret: TELEGRAM_TOKEN
+      to:
+        from_secret: TELEGRAM_CHAT_ID
+    when:
+      status: [ failure ]
