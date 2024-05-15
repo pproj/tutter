@@ -9,7 +9,7 @@
             var randomString = '';
             for (var i = 0; i < len; i++) {
                 var randomPoz = Math.floor(Math.random() * charSet.length);
-                randomString += charSet.substring(randomPoz,randomPoz+1);
+                randomString += charSet.substring(randomPoz, randomPoz + 1);
             }
             return randomString;
         }
@@ -30,6 +30,22 @@
                         console.log(respJson)
                         resolve({response, respJson})
                     })
+                })
+            })
+        }
+
+        function debugDropDatabase(debugPin) {
+            return new Promise((resolve) => {
+                fetch('/api/debug/cleanup', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Debug-Pin': debugPin,
+                    },
+                    body: "",
+                }).then(response => {
+                    resolve(response)
                 })
             })
         }
@@ -107,7 +123,7 @@
 
             let all_promises = []
 
-            for (let i=0; i < count; i++) {
+            for (let i = 0; i < count; i++) {
                 let author = presetAuthor
                 if (author === "") {
                     author = (Math.random() + 1).toString(36).substring(7); // funny one
@@ -139,7 +155,7 @@
             const scrollTestAuthor = document.getElementById("scrollTestAuthor")
             const presetAuthor = scrollTestAuthor.value || ""
 
-            scrollTestInterval = setInterval(function() {
+            scrollTestInterval = setInterval(function () {
                 scrollTestCounter++
                 let author = presetAuthor
                 if (author === "") {
@@ -158,6 +174,20 @@
             scrollTestInterval = null
             const scrollTestResult = document.getElementById("scrollTestResult")
             scrollTestResult.innerHTML = "posted: " + scrollTestCounter + " stopped"
+        }
+
+        function onCleanup() {
+            const debugTestResult = document.getElementById("debugTestResult")
+            const debugPin = document.getElementById("debugPinInput").value
+            debugTestResult.innerHTML = "Loading..."
+            const startTime = new Date();
+            debugDropDatabase(debugPin).then(resp => {
+                endTime = new Date();
+                const latency = endTime - startTime; //in ms
+                console.log(resp);
+                debugTestResult.innerHTML = "<b>Status:</b> " + resp.status + " " + resp.statusText + "<br><b>Latency:</b> " + latency + "ms";
+                loadPosts();
+            })
         }
 
     </script>
@@ -219,15 +249,29 @@
 
 <div style="border: blue solid 1px; margin: 2em 1em; padding: 1em">
     <h2>Generate random posts</h2>
-    Author: <input type="text" id="randomPostAuthor" placeholder="leave empty for random author">&nbsp;Count: <input type="number" id="randomPostCounter" value="10" min="1" step="1"/>&nbsp;<button onclick="onGenerateRandomPosts()">Generate</button>
+    Author: <input type="text" id="randomPostAuthor" placeholder="leave empty for random author">&nbsp;Count: <input
+        type="number" id="randomPostCounter" value="10" min="1" step="1"/>&nbsp;<button
+        onclick="onGenerateRandomPosts()">Generate
+</button>
     <div id="randomPostsResult">
     </div>
 </div>
 
 <div style="border: blue solid 1px; margin: 2em 1em; padding: 1em">
     <h2>Scroll test</h2>
-    Author: <input type="text" id="scrollTestAuthor" placeholder="leave empty for random author">&nbsp;Delay: <input type="number" id="scrollTestDelay" value="2000" min="200" step="1">ms&nbsp;<button onclick="onStartScrollTest()">Start</button>&nbsp;<button onclick="onStopScrollTest()">Stop</button>
+    Author: <input type="text" id="scrollTestAuthor" placeholder="leave empty for random author">&nbsp;Delay: <input
+        type="number" id="scrollTestDelay" value="2000" min="200" step="1">ms&nbsp;<button
+        onclick="onStartScrollTest()">Start
+</button>&nbsp;<button onclick="onStopScrollTest()">Stop</button>
     <div id="scrollTestResult">
+    </div>
+</div>
+
+<div style="border: red solid 1px; margin: 2em 1em; padding: 1em">
+    <h2>Debug</h2>
+    Debug key: <input type="text" id="debugPinInput" placeholder=""><br>
+    <button onclick="onCleanup()">Drop database</button>
+    <div id="debugTestResult">
     </div>
 </div>
 
