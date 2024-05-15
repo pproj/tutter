@@ -1,6 +1,8 @@
 # Tutter
 
-Tutter is a simple social platform. Developed for PP'23.
+[![Build Status](https://drone.k8s.marcsello.com/api/badges/pproj/tutter/status.svg)](https://drone.k8s.marcsello.com/pproj/tutter)
+
+Tutter is a simple social platform. Developed originally for PP'23.
 
 https://pproj.net/
 
