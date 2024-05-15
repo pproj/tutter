@@ -1,9 +1,9 @@
-FROM golang:1.20-alpine3.17 as backend-builder
+FROM golang:1.22.3-alpine3.19 as backend-builder
 
 COPY . /src/
 WORKDIR /src
 
-RUN apk add --no-cache make=4.3-r1 && make -j "$(nproc)"
+RUN apk add --no-cache make=4.4.1-r2 && make -j "$(nproc)"
 
 FROM node:18 as frontend-builder
 
@@ -12,7 +12,7 @@ WORKDIR /src
 
 RUN npm install && npm run build
 
-FROM alpine:3.17
+FROM alpine:3.19
 
 # hadolint ignore=DL3018
 RUN apk add --no-cache ca-certificates
