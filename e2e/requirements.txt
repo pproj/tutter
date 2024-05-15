@@ -1,3 +1,2 @@
 requests
 requests-toolbelt
-psycopg2-binary
