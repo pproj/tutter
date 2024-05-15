@@ -121,6 +121,9 @@
             const randomPostAuthor = document.getElementById("randomPostAuthor")
             const presetAuthor = randomPostAuthor.value
 
+            const randomPostsResult = document.getElementById("randomPostsResult")
+            randomPostsResult.innerHTML = "working..."
+
             let all_promises = []
 
             for (let i = 0; i < count; i++) {
@@ -132,8 +135,9 @@
                 all_promises.push(createPost({author, text}))
             }
 
+            randomPostsResult.innerHTML = "all submitted, waiting for finish..."
+
             Promise.all(all_promises).then(() => {
-                const randomPostsResult = document.getElementById("randomPostsResult")
                 randomPostsResult.innerHTML = "done"
                 loadPosts()
             })
