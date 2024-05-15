@@ -1,9 +1,9 @@
 package views
 
 import (
-	"git.sch.bme.hu/pp23/tutter/db"
-	"git.sch.bme.hu/pp23/tutter/observer"
 	"github.com/gin-gonic/gin"
+	"github.com/pproj/tutter/db"
+	"github.com/pproj/tutter/observer"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"time"

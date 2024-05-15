@@ -2,9 +2,9 @@ package views
 
 import (
 	"fmt"
-	"git.sch.bme.hu/pp23/tutter/db"
 	"github.com/gin-gonic/gin"
 	"github.com/microcosm-cc/bluemonday"
+	"github.com/pproj/tutter/db"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"html"

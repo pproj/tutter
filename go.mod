@@ -1,4 +1,4 @@
-module git.sch.bme.hu/pp23/tutter
+module github.com/pproj/tutter
 
 go 1.22.3
 

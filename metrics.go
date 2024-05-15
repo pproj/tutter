@@ -1,7 +1,7 @@
 package main
 
 import (
-	"git.sch.bme.hu/pp23/tutter/db"
+	"github.com/pproj/tutter/db"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )

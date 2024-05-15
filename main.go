@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"git.sch.bme.hu/pp23/tutter/db"
-	"git.sch.bme.hu/pp23/tutter/views"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	"github.com/pproj/tutter/db"
+	"github.com/pproj/tutter/views"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gitlab.com/MikeTTh/env"
 	"go.uber.org/zap"

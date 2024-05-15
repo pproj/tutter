@@ -3,8 +3,8 @@ package views
 import (
 	"context"
 	"fmt"
-	"git.sch.bme.hu/pp23/tutter/db"
 	"github.com/gin-gonic/gin"
+	"github.com/pproj/tutter/db"
 	"gorm.io/gorm"
 	"time"
 )

@@ -2,8 +2,8 @@ package views
 
 import (
 	"fmt"
-	"git.sch.bme.hu/pp23/tutter/db"
 	"github.com/gin-gonic/gin"
+	"github.com/pproj/tutter/db"
 	"gorm.io/gorm"
 )
 

@@ -3,7 +3,7 @@ package observer
 import (
 	"context"
 	"fmt"
-	"git.sch.bme.hu/pp23/tutter/db"
+	"github.com/pproj/tutter/db"
 	"sync"
 	"sync/atomic"
 )

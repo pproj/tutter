@@ -1,8 +1,8 @@
 package views
 
 import (
-	"git.sch.bme.hu/pp23/tutter/observer"
 	"github.com/gin-gonic/gin"
+	"github.com/pproj/tutter/observer"
 )
 
 // handleError create a 500 response for error
