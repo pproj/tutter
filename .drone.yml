@@ -19,6 +19,11 @@ steps:
     commands:
       - go test -v ./...
 
+  - name: submodules # https://docs.drone.io/pipeline/docker/syntax/cloning/
+    image: alpine/git
+    commands:
+      - git submodule update --init --recursive
+
   - name: kaniko
     image: plugins/kaniko
     settings:
