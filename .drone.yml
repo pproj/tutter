@@ -32,7 +32,7 @@ steps:
         - ${DRONE_BUILD_NUMBER}
     when:
       branch:
-        - main
+        - master
 
   - name: telegram
     image: appleboy/drone-telegram
