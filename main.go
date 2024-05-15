@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"fmt"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
@@ -10,19 +11,29 @@ import (
 	"gitlab.com/MikeTTh/env"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"math/rand"
+	"math/big"
 	"net/http"
 	"strings"
 	"time"
 )
 
-func randStringRunes(n int) string {
-	const letterRunes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+// GenerateRandomString returns a securely generated random string.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+// taken from here: https://gist.github.com/dopey/c69559607800d2f2f90b1b1ed4e550fb
+func generateRandomString(n int) string {
+	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
+	ret := make([]byte, n)
+	for i := 0; i < n; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
+		if err != nil {
+			panic(err)
+		}
+		ret[i] = letters[num.Int64()]
 	}
-	return string(b)
+
+	return string(ret)
 }
 
 func goodLoggerMiddleware(logger *zap.Logger) gin.HandlerFunc {
@@ -106,7 +117,6 @@ func createBearerAuth(token string) gin.HandlerFunc {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 	debugMode := env.Bool("DEBUG", false)
 
 	// Setup logger
@@ -162,7 +172,7 @@ func main() {
 	debugPin := ""
 	if debugMode {
 		debugPin = env.StringOrDoSomething("DEBUG_PIN", func() string {
-			generatedDebugPin := randStringRunes(24)
+			generatedDebugPin := generateRandomString(24)
 			logger.Info("DEBUG_PIN envvar undefined, random pin generated", zap.String("generatedDebugPin", generatedDebugPin))
 			return generatedDebugPin
 		})
