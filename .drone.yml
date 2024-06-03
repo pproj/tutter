@@ -28,9 +28,9 @@ steps:
     image: plugins/kaniko
     settings:
       username:
-        from_secret: DOCKER_USERNAME
+        from_secret: DOCKERHUB_REGISTRY_USERNAME
       password:
-        from_secret: DOCKER_PASSWORD
+        from_secret: DOCKERHUB_REGISTRY_PASSWORD
       repo: pproj/tutter
       tags:
         - latest
