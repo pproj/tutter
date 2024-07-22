@@ -50,10 +50,6 @@ func Connect(lgr *zap.Logger) (err error) {
 	sqlDB.SetMaxIdleConns(maxIdle)
 	sqlDB.SetMaxOpenConns(maxConn)
 
-	if err != nil {
-		return
-	}
-
 	err = db.AutoMigrate(Post{}, Tag{}, Author{})
 	if err != nil {
 		return
