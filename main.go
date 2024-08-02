@@ -196,8 +196,23 @@ func main() {
 		gin.WrapH(promhttp.Handler()),
 	)
 
-	// Listen and serve on 0.0.0.0:8080
-	err = router.Run(":8080")
+	srv := &http.Server{
+		Addr:              env.String("BIND_ADDR", ":8080"),
+		Handler:           router,
+		ReadHeaderTimeout: 2 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+	}
+
+	tlsKey := env.String("TLS_KEY", "")
+	tlsCert := env.String("TLS_CERT", "")
+
+	if tlsKey != "" && tlsCert != "" {
+		logger.Warn("Running in HTTPS", zap.String("tlsCert", tlsCert), zap.String("tlsKey", tlsKey))
+		err = srv.ListenAndServeTLS(tlsCert, tlsKey)
+	} else {
+		logger.Warn("Running in HTTP mode without TLS")
+		err = srv.ListenAndServe()
+	}
 	if err != nil {
 		panic(err)
 	}
