@@ -207,10 +207,10 @@ func main() {
 	tlsCert := env.String("TLS_CERT", "")
 
 	if tlsKey != "" && tlsCert != "" {
-		logger.Warn("Running in HTTPS", zap.String("tlsCert", tlsCert), zap.String("tlsKey", tlsKey))
+		logger.Warn("Running in HTTPS", zap.String("tlsCert", tlsCert), zap.String("tlsKey", tlsKey), zap.String("listenAddr", srv.Addr))
 		err = srv.ListenAndServeTLS(tlsCert, tlsKey)
 	} else {
-		logger.Warn("Running in HTTP mode without TLS")
+		logger.Warn("Running in HTTP mode without TLS", zap.String("listenAddr", srv.Addr))
 		err = srv.ListenAndServe()
 	}
 	if err != nil {
