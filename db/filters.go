@@ -2,8 +2,10 @@ package db
 
 import (
 	"fmt"
-	"gorm.io/gorm"
+	"math"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 const (
@@ -60,6 +62,13 @@ func (p CommonPaginationParams) Validate() error {
 	return nil
 }
 
+func intConv(a uint) int {
+	if a > uint(math.MaxInt32) {
+		return math.MaxInt32
+	}
+	return int(a)
+}
+
 func (p CommonPaginationParams) Apply(chain *gorm.DB) *gorm.DB {
 
 	if p.Order != nil {
@@ -74,12 +83,12 @@ func (p CommonPaginationParams) Apply(chain *gorm.DB) *gorm.DB {
 
 	// Apply offset if needed
 	if p.Offset != nil {
-		chain = chain.Offset(int(*p.Offset))
+		chain = chain.Offset(intConv(*p.Offset))
 	}
 
 	// Limit should be the last
 	if p.Limit != nil {
-		chain = chain.Limit(int(*p.Limit))
+		chain = chain.Limit(intConv(*p.Limit))
 	}
 
 	return chain
