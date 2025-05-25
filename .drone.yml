@@ -15,7 +15,7 @@ steps:
       - gosec ./...
 
   - name: go_test
-    image: golang:1.22.3
+    image: golang:1.23
     commands:
       - go test -v ./...
 
