@@ -1,4 +1,4 @@
-FROM golang:1.22.3-alpine3.19 as backend-builder
+FROM golang:1.23-alpine as backend-builder
 
 COPY . /src/
 WORKDIR /src
@@ -12,7 +12,7 @@ WORKDIR /src
 
 RUN npm install && npm run build
 
-FROM alpine:3.19
+FROM alpine:3.21
 
 # hadolint ignore=DL3018
 RUN apk add --no-cache ca-certificates
